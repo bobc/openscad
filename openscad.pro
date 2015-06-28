@@ -102,6 +102,10 @@ macx {
   LIBS += -framework Cocoa -framework ApplicationServices
 }
 
+LIBS += -Lcarve/lib -lcarve
+
+INCLUDEPATH += carve/include
+
 
 win* {
   RC_FILE = openscad_win32.rc
@@ -154,6 +158,10 @@ netbsd* {
 *g++* {
   QMAKE_CXXFLAGS *= -fno-strict-aliasing
   QMAKE_CXXFLAGS_WARN_ON += -Wno-unused-local-typedefs # ignored before 4.8
+
+  QMAKE_CXXFLAGS_WARN_ON += -Wno-unused-parameter
+  QMAKE_CXXFLAGS_WARN_ON += -Wno-unused-variable
+
 }
 
 *clang* {
@@ -177,7 +185,8 @@ CONFIG(skip-version-check) {
 # Application configuration
 macx:CONFIG += mdi
 #CONFIG += c++11
-CONFIG += cgal
+#CONFIG += cgal
+CONFIG += carve
 CONFIG += opencsg
 CONFIG += boost
 CONFIG += eigen
@@ -389,7 +398,9 @@ SOURCES += src/version_check.cc \
            \
            src/nodedumper.cc \
            src/traverser.cc \
-           src/GeometryEvaluator.cc \
+           src/GeometryEvaluatorNew.cc \
+           src/csgif_polyhedron.cc \
+           src/csgif_utils.cc \
            src/ModuleCache.cc \
            src/GeometryCache.cc \
            src/Tree.cc \

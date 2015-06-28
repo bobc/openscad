@@ -113,7 +113,6 @@
 #ifdef ENABLE_CGAL
 
 #include "CGALCache.h"
-#include "GeometryEvaluator.h"
 #include "CGALRenderer.h"
 #include "CGAL_Nef_polyhedron.h"
 #include "cgal.h"
@@ -121,6 +120,8 @@
 #include "cgalutils.h"
 
 #endif // ENABLE_CGAL
+
+#include "GeometryEvaluator.h"
 
 #include "boosty.h"
 #include "FontCache.h"
@@ -1115,10 +1116,10 @@ void MainWindow::compileCSG(bool procevents)
 	try {
 #ifdef ENABLE_CGAL
 		GeometryEvaluator geomevaluator(this->tree);
-#else
-		// FIXME: Will we support this?
-#endif
 		CSGTermEvaluator csgrenderer(this->tree, &geomevaluator);
+#else
+		CSGTermEvaluator csgrenderer(this->tree);
+#endif
 		if (procevents) QApplication::processEvents();
 		this->root_raw_term = csgrenderer.evaluateCSGTerm(*root_node, highlight_terms, background_terms);
 		GeometryCache::instance()->print();
@@ -2021,11 +2022,7 @@ void MainWindow::actionCheckValidity() {
 #endif /* ENABLE_CGAL */
 }
 
-#ifdef ENABLE_CGAL
 void MainWindow::actionExport(export_type_e export_type, const char *type_name, const char *suffix)
-#else
-void MainWindow::actionExport(export_type_e, QString, QString)
-#endif
 {
 	if (GuiLocker::isLocked()) return;
 	GuiLocker lock;
@@ -2112,6 +2109,7 @@ void MainWindow::actionExportAMF()
 QString MainWindow::get2dExportFilename(QString format, QString extension) {
 	setCurrentOutput();
 
+#ifdef ENABLE_CGAL
 	if (!this->root_geom) {
 		PRINT("WARNING: Nothing to export! Try building first (press F6).");
 		clearCurrentOutput();
@@ -2137,6 +2135,11 @@ QString MainWindow::get2dExportFilename(QString format, QString extension) {
 	}
 	
 	return exportFilename;
+#else
+	PRINT("Needs CGAL.");
+
+	return QString();
+#endif /* ENABLE_CGAL */
 }
 
 void MainWindow::actionExportDXF()
@@ -2156,6 +2159,7 @@ void MainWindow::actionExportDXF()
 
 void MainWindow::actionExportSVG()
 {
+#ifdef ENABLE_CGAL
 	QString svg_filename = get2dExportFilename("SVG", ".svg");
 	if (svg_filename.isEmpty()) {
 		return;
@@ -2165,6 +2169,7 @@ void MainWindow::actionExportSVG()
 	PRINT("SVG export finished.");
 
 	clearCurrentOutput();
+#endif /* ENABLE_CGAL */
 }
 
 void MainWindow::actionExportCSG()
@@ -2336,6 +2341,7 @@ void MainWindow::viewModeShowScaleProportional()
 
 void MainWindow::viewModeAnimate()
 {
+#ifdef ENABLE_CGAL
 	if (viewActionAnimate->isChecked()) {
 		animate_panel->show();
 		actionRenderPreview();
@@ -2344,6 +2350,7 @@ void MainWindow::viewModeAnimate()
 		animate_panel->hide();
 		animate_timer->stop();
 	}
+#endif
 }
 
 void MainWindow::animateUpdateDocChanged()

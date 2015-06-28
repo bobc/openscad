@@ -102,7 +102,9 @@ static shared_ptr<CSGTerm> evaluate_csg_term_from_geometry(const State &state,
 	if (!g->isEmpty()) {
 		shared_ptr<const Polygon2d> p2d = dynamic_pointer_cast<const Polygon2d>(geom);
 		if (p2d) {
+#ifdef ENABLE_CGAL
 			g.reset(p2d->tessellate());
+#endif
 		}
 		else {
 			// We cannot render concave polygons, so tessellate any 3D PolySets

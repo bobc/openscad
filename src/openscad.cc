@@ -52,6 +52,8 @@
 #include "cgalutils.h"
 #endif
 
+#include "csgif_polyhedron.h"
+
 #include "csgterm.h"
 #include "CSGTermEvaluator.h"
 #include "CsgInfo.h"
@@ -75,6 +77,8 @@
 #ifdef _MSC_VER
 #define snprintf _snprintf
 #endif
+
+#define ENABLE_CGAL
 
 namespace po = boost::program_options;
 namespace fs = boost::filesystem;
@@ -466,6 +470,8 @@ int cmdline(const char *deps_output_file, const std::string &filename, Camera &c
 		} else {
 			root_geom = geomevaluator.evaluateGeometry(*tree.root(), true);
 			if (!root_geom) root_geom.reset(new CGAL_Nef_polyhedron());
+
+#if CGAL
 			if (renderer == Render::CGAL && root_geom->getDimension() == 3) {
 				const CGAL_Nef_polyhedron *N = dynamic_cast<const CGAL_Nef_polyhedron*>(root_geom.get());
 				if (!N) {
@@ -474,6 +480,7 @@ int cmdline(const char *deps_output_file, const std::string &filename, Camera &c
 					PRINT("Converted to Nef polyhedron");
 				}
 			}
+#endif
 		}
 
 		fs::current_path(original_path);
@@ -771,7 +778,7 @@ int main(int argc, char **argv)
 	PlatformUtils::ensureStdIO();
 #endif
 
-#ifdef ENABLE_CGAL
+#ifdef CGAL
 	// Causes CGAL errors to abort directly instead of throwing exceptions
 	// (which we don't catch). This gives us stack traces without rerunning in gdb.
 	CGAL::set_error_behaviour(CGAL::ABORT);

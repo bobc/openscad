@@ -102,4 +102,19 @@ void export_png_with_throwntogether(Tree &tree, Camera &cam, std::ostream &outpu
 	export_png_preview_common(tree, cam, output, THROWNTOGETHER);
 }
 
+#else
+
+void export_png(shared_ptr<const Geometry> root_geom, Camera &cam, std::ostream &output)
+{
+}
+
+void export_png_with_opencsg(Tree &tree, Camera &cam, std::ostream &output)
+{
+}
+
+void export_png_with_throwntogether(Tree &tree, Camera &cam, std::ostream &output)
+{
+}
+
+
 #endif // ENABLE_CGAL
