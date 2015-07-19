@@ -3,6 +3,7 @@
 #include "Tree.h"
 #include "Geometry.h"
 #include "GeometryCache.h"
+#include "CGALCache.h"
 #include "Polygon2d.h"
 #include "clipper-utils.h"
 #include "module.h"
@@ -130,9 +131,9 @@ shared_ptr<const Geometry> GeometryEvaluator::evaluateGeometry(const AbstractNod
 
 	if (!GeometryCache::instance()->contains(this->tree.getIdString(node))) {
 		shared_ptr<const CGAL_Nef_polyhedron> N;
-//		if (CGALCache::instance()->contains(this->tree.getIdString(node))) {
-//			N = CGALCache::instance()->get(this->tree.getIdString(node));
-//		}
+		if (CGALCache::instance()->contains(this->tree.getIdString(node))) {
+			N = CGALCache::instance()->get(this->tree.getIdString(node));
+		}
 
 		// If not found in any caches, we need to evaluate the geometry
 		if (N) {
@@ -143,14 +144,13 @@ shared_ptr<const Geometry> GeometryEvaluator::evaluateGeometry(const AbstractNod
 			trav.execute();
 		}
 
-#if 0
 		if (!allownef) {
 			if (shared_ptr<const CGAL_Nef_polyhedron> N = dynamic_pointer_cast<const CGAL_Nef_polyhedron>(this->root)) {
 				PolySet *ps = new PolySet(3);
 				ps->setConvexity(N->getConvexity());
 				this->root.reset(ps);
                 if (!N->isEmpty()) {
-                    bool err = CGALUtils::createPolySetFromNefPolyhedron3(*N->p3, *ps);
+                    bool err = csgif_utils::createPolySetFromCsgPolyhedron(*N, *ps);
                     if (err) {
                         PRINT("ERROR: Nef->PolySet failed");
                     }
@@ -159,7 +159,7 @@ shared_ptr<const Geometry> GeometryEvaluator::evaluateGeometry(const AbstractNod
 				smartCacheInsert(node, this->root);
 			}
 		}
-#endif // 0
+        return this->root;
 	}
 	return GeometryCache::instance()->get(this->tree.getIdString(node));
 }
@@ -337,12 +337,11 @@ void GeometryEvaluator::smartCacheInsert(const AbstractNode &node,
 {
 	const std::string &key = this->tree.getIdString(node);
 
-//	shared_ptr<const CGAL_Nef_polyhedron> N = dynamic_pointer_cast<const CGAL_Nef_polyhedron>(geom);
-//	if (N) {
-//		if (!CGALCache::instance()->contains(key)) CGALCache::instance()->insert(key, N);
-//	}
-//	else
-	{
+	shared_ptr<const CGAL_Nef_polyhedron> N = dynamic_pointer_cast<const CGAL_Nef_polyhedron>(geom);
+	if (N) {
+		if (!CGALCache::instance()->contains(key)) CGALCache::instance()->insert(key, N);
+	}
+	else {
 		if (!GeometryCache::instance()->contains(key)) {
 			if (!GeometryCache::instance()->insert(key, geom)) {
 				PRINT("WARNING: GeometryEvaluator: Node didn't fit into cache");
@@ -354,9 +353,8 @@ void GeometryEvaluator::smartCacheInsert(const AbstractNode &node,
 bool GeometryEvaluator::isSmartCached(const AbstractNode &node)
 {
 	const std::string &key = this->tree.getIdString(node);
-	return (GeometryCache::instance()->contains(key)
-//            || 	CGALCache::instance()->contains(key)
-            );
+	return (GeometryCache::instance()->contains(key) ||
+					CGALCache::instance()->contains(key));
 }
 
 shared_ptr<const Geometry> GeometryEvaluator::smartCacheGet(const AbstractNode &node, bool preferNef)
@@ -364,12 +362,9 @@ shared_ptr<const Geometry> GeometryEvaluator::smartCacheGet(const AbstractNode &
 	const std::string &key = this->tree.getIdString(node);
 	shared_ptr<const Geometry> geom;
 	bool hasgeom = GeometryCache::instance()->contains(key);
-//	bool hascgal = CGALCache::instance()->contains(key);
-//	if (hascgal && (preferNef || !hasgeom))
-//        geom = CGALCache::instance()->get(key);
-//	else
-        if (hasgeom) geom = GeometryCache::instance()->get(key);
-
+	bool hascgal = CGALCache::instance()->contains(key);
+	if (hascgal && (preferNef || !hasgeom)) geom = CGALCache::instance()->get(key);
+	else if (hasgeom) geom = GeometryCache::instance()->get(key);
 	return geom;
 }
 

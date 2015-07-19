@@ -16,7 +16,7 @@
 #   resource folder. E.g. using SUFFIX=-nightly will name the
 #   resulting binary openscad-nightly.
 #
-# Please see the 'Building' sections of the OpenSCAD user manual 
+# Please see the 'Building' sections of the OpenSCAD user manual
 # for updated tips & workarounds.
 #
 # http://en.wikibooks.org/wiki/OpenSCAD_User_Manual
@@ -254,8 +254,6 @@ HEADERS += src/typedefs.h \
            src/rendersettings.h \
            src/colormap.h \
            src/ThrownTogetherRenderer.h \
-           src/CGAL_OGL_Polyhedron.h \
-           src/OGL_helper.h \
            src/QGLView.h \
            src/GLView.h \
            src/MainWindow.h \
@@ -483,6 +481,24 @@ win* {
 opencsg {
   HEADERS += src/OpenCSGRenderer.h
   SOURCES += src/OpenCSGRenderer.cc
+}
+
+carve {
+  DEFINES += ENABLE_CSGIF
+
+HEADERS += src/CGALCache.h \
+           src/CSGIF_Renderer.h \
+           src/cgalworker.h
+
+SOURCES += src/CGALCache.cc \
+           src/CSGIF_Renderer.cc \
+           src/cgalworker.cc
+
+}
+
+cgal_ogl_helper {
+HEADERS += src/CGAL_OGL_Polyhedron.h \
+           src/OGL_helper.h
 }
 
 cgal {

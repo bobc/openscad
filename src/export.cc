@@ -41,6 +41,8 @@
 #include <carve/csg.hpp>
 #include <carve/poly.hpp>
 #include <carve/geom.hpp>
+//#include <carve/interpolator.hpp>
+//#include <carve/csg_triangulator.hpp>
 //#include <carve/polyline.hpp>
 //#include <carve/pointset.hpp>
 
@@ -222,7 +224,7 @@ void export_amf(const CGAL_Nef_polyhedron *root_N, std::ostream &output)
 			<< "</metadata>\r\n"
 			<< " <object id=\"0\">\r\n"
 			<< "  <mesh>\r\n";
-		output << "   <vertices>\r\n";
+    output << "   <vertices>\r\n";
 
     carve::mesh::MeshSet<3> * poly = root_N->poly->poly;
 
@@ -233,27 +235,40 @@ void export_amf(const CGAL_Nef_polyhedron *root_N, std::ostream &output)
 			output << "     <z>" << poly->vertex_storage[i].v[2] << "</z>\r\n";
 			output << "    </coordinates></vertex>\r\n";
 		}
-		output << "   </vertices>\r\n";
-		output << "   <volume>\r\n";
+	output << "   </vertices>\r\n";
 
-		for (carve::mesh::MeshSet<3>::face_iter i = poly->faceBegin(); i != poly->faceEnd(); ++i) {
-            carve::mesh::MeshSet<3>::face_t *f = *i;
+	output << "   <volume>\r\n";
+	for (carve::mesh::MeshSet<3>::face_iter i = poly->faceBegin(); i != poly->faceEnd(); ++i) {
+        carve::mesh::MeshSet<3>::face_t *f = *i;
 
+        carve::mesh::MeshSet<3>::face_t::edge_iter_t edge = f->begin();
+        int v1,v2,v3;
+
+        v1 = (*edge).vert - &poly->vertex_storage[0];
+        edge++;
+        v3 = (*edge).vert - &poly->vertex_storage[0];
+        edge++;
+
+        do {
+            v2 = v3;
+            v3 = (*edge).vert - &poly->vertex_storage[0];
+            edge++;
+
+            //
             output << "    <triangle>\r\n";
-            size_t index=1;
-            for (carve::mesh::MeshSet<3>::face_t::edge_iter_t edge = f->begin(); edge != f->end(); ++edge) {
-                output << "     <v" << index << ">" <<
-                        (*edge).vert - &poly->vertex_storage[0] <<
-                        "</v" << index << ">\r\n";
-                index++;
-                //output << "     <v2>" << index << "</v2>\r\n";
-                //output << "     <v3>" << index << "</v3>\r\n";
-            }
+            output << "     <v1>" << v1 << "</v1>\r\n";
+            output << "     <v2>" << v2 << "</v2>\r\n";
+            output << "     <v3>" << v3 << "</v3>\r\n";
             output << "    </triangle>\r\n";
-		}
-		output << "  </mesh>\r\n"
-			<< " </object>\r\n"
-			<< "</amf>\r\n";
+        } while (edge != f->end());
+
+        //
+    }
+    output << "   </volume>\r\n";
+
+    output << "  </mesh>\r\n"
+        << " </object>\r\n"
+        << "</amf>\r\n";
 }
 
 

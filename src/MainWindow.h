@@ -57,6 +57,9 @@ public:
 #ifdef ENABLE_CGAL
 	shared_ptr<const class Geometry> root_geom;
 	class CGALRenderer *cgalRenderer;
+#elif defined(ENABLE_CSGIF)
+	shared_ptr<const class Geometry> root_geom;
+	class CSGIF_Renderer *cgalRenderer;
 #endif
 #ifdef ENABLE_OPENCSG
 	class OpenCSGRenderer *opencsgRenderer;
@@ -75,8 +78,8 @@ public:
         QLabel *versionLabel;
         QWidget *editorDockTitleWidget;
         QWidget *consoleDockTitleWidget;
-        
-	QString editortype;	
+
+	QString editortype;
 	bool useScintilla;
 
         int compileErrors;
@@ -181,7 +184,7 @@ private slots:
 	void actionRenderPreview();
 	void csgRender();
 	void csgReloadRender();
-#ifdef ENABLE_CGAL
+#ifdef ENABLE_CSGIF
 	void actionRender();
 	void actionRenderDone(shared_ptr<const class Geometry>);
 	void cgalRender();
@@ -217,7 +220,7 @@ public slots:
 #ifdef ENABLE_OPENCSG
 	void viewModePreview();
 #endif
-#ifdef ENABLE_CGAL
+#ifdef ENABLE_CSGIF
 	void viewModeSurface();
 	void viewModeWireframe();
 #endif

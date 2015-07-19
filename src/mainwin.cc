@@ -121,6 +121,14 @@
 
 #endif // ENABLE_CGAL
 
+// carve csg
+#define ENABLE_CSGIF
+
+#include "CGALCache.h"
+#include "CSGIF_Renderer.h"
+#include "csgif_polyhedron.h"
+#include "cgalworker.h"
+
 #include "GeometryEvaluator.h"
 
 #include "boosty.h"
@@ -231,9 +239,9 @@ MainWindow::MainWindow(const QString &filename)
 
 	MainWindow::getWindows()->insert(this);
 
-#ifdef ENABLE_CGAL
+#ifdef ENABLE_CSGIF
 	this->cgalworker = new CGALWorker();
-	connect(this->cgalworker, SIGNAL(done(shared_ptr<const Geometry>)), 
+	connect(this->cgalworker, SIGNAL(done(shared_ptr<const Geometry>)),
 					this, SLOT(actionRenderDone(shared_ptr<const Geometry>)));
 #endif
 
@@ -242,7 +250,7 @@ MainWindow::MainWindow(const QString &filename)
 	root_module = NULL;
 	absolute_root_node = NULL;
 	this->root_chain = NULL;
-#ifdef ENABLE_CGAL
+#ifdef ENABLE_CSGIF
 	this->cgalRenderer = NULL;
 #endif
 #ifdef ENABLE_OPENCSG
@@ -267,7 +275,7 @@ MainWindow::MainWindow(const QString &filename)
 	knownFileExtensions["png"] = surfaceStatement;
 	knownFileExtensions["scad"] = "";
 	knownFileExtensions["csg"] = "";
-	
+
 	editActionZoomTextIn->setShortcuts(QList<QKeySequence>() << editActionZoomTextIn->shortcuts() << QKeySequence("CTRL+="));
 
 	connect(this, SIGNAL(highlightError(int)), editor, SLOT(highlightError(int)));
@@ -300,7 +308,7 @@ MainWindow::MainWindow(const QString &filename)
 	connect(this->labelCompileResultMessage, SIGNAL(linkActivated(QString)), SLOT(showConsole()));
 
 	// File menu
-	connect(this->fileActionNew, SIGNAL(triggered()), this, SLOT(actionNew())); 
+	connect(this->fileActionNew, SIGNAL(triggered()), this, SLOT(actionNew()));
 	connect(this->fileActionOpen, SIGNAL(triggered()), this, SLOT(actionOpen()));
 	connect(this->fileActionSave, SIGNAL(triggered()), this, SLOT(actionSave()));
 	connect(this->fileActionSaveAs, SIGNAL(triggered()), this, SLOT(actionSaveAs()));
@@ -358,7 +366,7 @@ MainWindow::MainWindow(const QString &filename)
 	connect(this->designActionAutoReload, SIGNAL(toggled(bool)), this, SLOT(autoReloadSet(bool)));
 	connect(this->designActionReloadAndPreview, SIGNAL(triggered()), this, SLOT(actionReloadRenderPreview()));
 	connect(this->designActionPreview, SIGNAL(triggered()), this, SLOT(actionRenderPreview()));
-#ifdef ENABLE_CGAL
+#ifdef ENABLE_CSGIF
 	connect(this->designActionRender, SIGNAL(triggered()), this, SLOT(actionRender()));
 #else
 	this->designActionRender->setVisible(false);
@@ -386,7 +394,7 @@ MainWindow::MainWindow(const QString &filename)
 	}
 #endif
 
-#ifdef ENABLE_CGAL
+#ifdef ENABLE_CSGIF
 	connect(this->viewActionSurfaces, SIGNAL(triggered()), this, SLOT(viewModeSurface()));
 	connect(this->viewActionWireframe, SIGNAL(triggered()), this, SLOT(viewModeWireframe()));
 #else
@@ -452,13 +460,13 @@ MainWindow::MainWindow(const QString &filename)
 	connect(Preferences::inst(), SIGNAL(updateMdiMode(bool)), this, SLOT(updateMdiMode(bool)));
 	connect(Preferences::inst(), SIGNAL(updateReorderMode(bool)), this, SLOT(updateReorderMode(bool)));
 	connect(Preferences::inst(), SIGNAL(updateUndockMode(bool)), this, SLOT(updateUndockMode(bool)));
-	connect(Preferences::inst(), SIGNAL(fontChanged(const QString&,uint)), 
+	connect(Preferences::inst(), SIGNAL(fontChanged(const QString&,uint)),
 					editor, SLOT(initFont(const QString&,uint)));
 	connect(Preferences::inst(), SIGNAL(openCSGSettingsChanged()),
 					this, SLOT(openCSGSettingsChanged()));
 	connect(Preferences::inst(), SIGNAL(syntaxHighlightChanged(const QString&)),
 					editor, SLOT(setHighlightScheme(const QString&)));
-	connect(Preferences::inst(), SIGNAL(colorSchemeChanged(const QString&)), 
+	connect(Preferences::inst(), SIGNAL(colorSchemeChanged(const QString&)),
 					this, SLOT(setColorScheme(const QString&)));
 	Preferences::inst()->apply();
 
@@ -484,10 +492,10 @@ MainWindow::MainWindow(const QString &filename)
 	connect(this->replaceButton, SIGNAL(clicked()), this, SLOT(replace()));
 	connect(this->replaceAllButton, SIGNAL(clicked()), this, SLOT(replaceAll()));
 	connect(this->replaceInputField, SIGNAL(returnPressed()), this->replaceButton, SLOT(animateClick()));
-	
+
 	addKeyboardShortCut(this->viewerToolBar->actions());
 	addKeyboardShortCut(this->editortoolbar->actions());
-	
+
 	initActionIcon(fileActionNew, ":/images/blackNew.png", ":/images/Document-New-128.png");
 	initActionIcon(fileActionOpen, ":/images/Open-32.png", ":/images/Open-128.png");
 	initActionIcon(fileActionSave, ":/images/Save-32.png", ":/images/Save-128.png");
@@ -525,7 +533,7 @@ MainWindow::MainWindow(const QString &filename)
 	initActionIcon(editActionIndent, ":/images/Increase-Indent-32.png", ":/images/Increase-Indent-32-white.png");
 	initActionIcon(viewActionResetView, ":/images/Command-Reset-32.png", ":/images/Command-Reset-32-white.png");
 	initActionIcon(viewActionShowScaleProportional, ":/images/scalemarkers.png", ":/images/scalemarkers-white.png");
-	
+
 	// make sure it looks nice..
 	QByteArray windowState = settings.value("window/state", QByteArray()).toByteArray();
 	restoreState(windowState);
@@ -563,12 +571,12 @@ MainWindow::MainWindow(const QString &filename)
 		    move(windowRect.topLeft());
 		    resize(windowRect.size());
 		}
-#endif	    
+#endif
 	}
-	
+
 	connect(this->editorDock, SIGNAL(topLevelChanged(bool)), this, SLOT(editorTopLevelChanged(bool)));
 	connect(this->consoleDock, SIGNAL(topLevelChanged(bool)), this, SLOT(consoleTopLevelChanged(bool)));
-	
+
 	// display this window and check for OpenGL 2.0 (OpenCSG) support
 	viewModeThrownTogether();
 	show();
@@ -599,7 +607,7 @@ void MainWindow::addKeyboardShortCut(const QList<QAction *> &actions)
 	if (action->toolTip().contains("&nbsp;")) {
 	    continue;
 	}
-	
+
 	const QString shortCut(action->shortcut().toString(QKeySequence::NativeText));
 	if (shortCut.isEmpty()) {
 	    continue;
@@ -652,7 +660,7 @@ void MainWindow::loadDesignSettings()
 	}
 	uint polySetCacheSize = Preferences::inst()->getValue("advanced/polysetCacheSize").toUInt();
 	GeometryCache::instance()->setMaxSize(polySetCacheSize);
-#ifdef ENABLE_CGAL
+#ifdef ENABLE_CSGIF
 	uint cgalCacheSize = Preferences::inst()->getValue("advanced/cgalCacheSize").toUInt();
 	CGALCache::instance()->setMaxSize(cgalCacheSize);
 #endif
@@ -693,7 +701,7 @@ MainWindow::~MainWindow()
 	if (root_module) delete root_module;
 	if (root_node) delete root_node;
 	if (root_chain) delete root_chain;
-#ifdef ENABLE_CGAL
+#ifdef ENABLE_CSGIF
 	this->root_geom.reset();
 	delete this->cgalRenderer;
 #endif
@@ -774,7 +782,7 @@ void MainWindow::openFile(const QString &new_filename)
 	const QString cmd = knownFileExtensions[suffix];
 	if (knownFileType && cmd.isEmpty()) {
 		setFileName(new_filename);
-		updateRecentFiles();		
+		updateRecentFiles();
 	} else {
 		setFileName("");
 		editor->setPlainText(cmd.arg(new_filename));
@@ -790,7 +798,7 @@ void MainWindow::setFileName(const QString &filename)
 	if (filename.isEmpty()) {
 		this->fileName.clear();
 		setWindowFilePath(_("Untitled.scad"));
-		
+
 		this->top_ctx.setDocumentPath(currentdir);
 	} else {
 		QFileInfo fileinfo(filename);
@@ -1139,7 +1147,7 @@ void MainWindow::compileCSG(bool procevents)
 
 	size_t normalizelimit = 2 * Preferences::inst()->getValue("advanced/openCSGLimit").toUInt();
 	CSGTermNormalizer normalizer(normalizelimit);
-	
+
 	if (root_raw_term) {
 		this->root_norm_term = normalizer.normalize(this->root_raw_term);
 		if (this->root_norm_term) {
@@ -1156,18 +1164,18 @@ void MainWindow::compileCSG(bool procevents)
 	if (highlight_terms.size() > 0) {
 		PRINTB("Compiling highlights (%d CSG Trees)...", highlight_terms.size());
 		if (procevents) QApplication::processEvents();
-		
+
 		highlights_chain = new CSGChain();
 		for (unsigned int i = 0; i < highlight_terms.size(); i++) {
 			highlight_terms[i] = normalizer.normalize(highlight_terms[i]);
 			highlights_chain->import(highlight_terms[i]);
 		}
 	}
-	
+
 	if (background_terms.size() > 0) {
 		PRINTB("Compiling background (%d CSG Trees)...", background_terms.size());
 		if (procevents) QApplication::processEvents();
-		
+
 		background_chain = new CSGChain();
 		for (unsigned int i = 0; i < background_terms.size(); i++) {
 			background_terms[i] = normalizer.normalize(background_terms[i]);
@@ -1221,7 +1229,7 @@ void MainWindow::actionOpen()
 	if (!MainWindow::mdiMode && !maybeSave()) {
 	    return;
 	}
-	
+
 	openFile(fileInfo.filePath());
 }
 
@@ -1261,11 +1269,11 @@ void MainWindow::updateRecentFileActions()
 void MainWindow::show_examples()
 {
 	bool found_example = false;
-	
+
 	foreach (const QString &cat, UIUtils::exampleCategories()) {
 		QFileInfoList examples = UIUtils::exampleFiles(cat);
 		QMenu *menu = this->menuExamples->addMenu(gettext(cat.toStdString().c_str()));
-		
+
 		foreach(const QFileInfo &ex, examples) {
 			QAction *openAct = new QAction(ex.fileName(), this);
 			connect(openAct, SIGNAL(triggered()), this, SLOT(actionOpenExample()));
@@ -1274,7 +1282,7 @@ void MainWindow::show_examples()
 			found_example = true;
 		}
 	}
-	
+
 	if (!found_example) {
 		delete this->menuExamples;
 		this->menuExamples = NULL;
@@ -1504,7 +1512,7 @@ void MainWindow::convertTabsToSpaces()
     const QString text = this->editor->toPlainText();
 
     QString converted;
-    
+
     int cnt = 4;
     for (int idx = 0;idx < text.length();idx++) {
 	QChar c = text.at(idx);
@@ -1592,13 +1600,13 @@ void MainWindow::updateTemporalVariables()
 /*!
  * Update the viewport camera by evaluating the special variables. If they
  * are assigned on top-level, the values are used to change the camera
- * rotation, translation and distance. 
+ * rotation, translation and distance.
  */
 void MainWindow::updateCamera()
 {
 	if (!root_module)
 		return;
-	
+
 	bool camera_set = false;
 
 	Camera cam(qglview->cam);
@@ -1683,7 +1691,7 @@ void MainWindow::compileTopLevelDocument()
 	std::string fulltext =
 		std::string(this->last_compiled_doc.toUtf8().constData()) +
 		"\n" + commandline_commands;
-	
+
 	delete this->root_module;
 	this->root_module = NULL;
 
@@ -1802,7 +1810,7 @@ void MainWindow::csgRender()
 	compileEnded();
 }
 
-#ifdef ENABLE_CGAL
+#ifdef ENABLE_CSGIF
 
 void MainWindow::actionRender()
 {
@@ -1846,13 +1854,12 @@ void MainWindow::actionRenderDone(shared_ptr<const Geometry> root_geom)
 
 	if (root_geom) {
 		GeometryCache::instance()->print();
-#ifdef ENABLE_CGAL
 		CGALCache::instance()->print();
-#endif
 
 		int s = this->renderingTime.elapsed() / 1000;
 		PRINTB("Total rendering time: %d hours, %d minutes, %d seconds", (s / (60*60)) % ((s / 60) % 60) % (s % 60));
-			
+
+#ifdef ENABLE_CGAL
 		if (root_geom && !root_geom->isEmpty()) {
 			if (const CGAL_Nef_polyhedron *N = dynamic_cast<const CGAL_Nef_polyhedron *>(root_geom.get())) {
 				if (N->getDimension() == 3) {
@@ -1881,10 +1888,11 @@ void MainWindow::actionRenderDone(shared_ptr<const Geometry> root_geom)
 				assert(false && "Unknown geometry type");
 			}
 		}
+#endif
 		PRINT("Rendering finished.");
 
 		this->root_geom = root_geom;
-		this->cgalRenderer = new CGALRenderer(root_geom);
+		this->cgalRenderer = new CSGIF_Renderer(root_geom);
 		// Go to CGAL view mode
 		if (viewActionWireframe->isChecked()) viewModeWireframe();
 		else viewModeSurface();
@@ -1979,13 +1987,13 @@ void MainWindow::actionDisplayCSGProducts()
 	e->setWindowTitle("CSG Products Dump");
 	e->setReadOnly(true);
 	e->setPlainText(QString("\nCSG before normalization:\n%1\n\n\nCSG after normalization:\n%2\n\n\nCSG rendering chain:\n%3\n\n\nHighlights CSG rendering chain:\n%4\n\n\nBackground CSG rendering chain:\n%5\n")
-									
+
 	.arg(root_raw_term ? QString::fromUtf8(root_raw_term->dump().c_str()) : "N/A",
 	root_norm_term ? QString::fromUtf8(root_norm_term->dump().c_str()) : "N/A",
 	this->root_chain ? QString::fromUtf8(this->root_chain->dump().c_str()) : "N/A",
 	highlights_chain ? QString::fromUtf8(highlights_chain->dump().c_str()) : "N/A",
 	background_chain ? QString::fromUtf8(background_chain->dump().c_str()) : "N/A"));
-	
+
 	e->show();
 	e->resize(600, 400);
 	clearCurrentOutput();
@@ -1994,7 +2002,7 @@ void MainWindow::actionDisplayCSGProducts()
 void MainWindow::actionCheckValidity() {
 	if (GuiLocker::isLocked()) return;
 	GuiLocker lock;
-#ifdef ENABLE_CGAL
+#ifdef ENABLE_CSGIF
 	setCurrentOutput();
 
 	if (!this->root_geom) {
@@ -2009,6 +2017,7 @@ void MainWindow::actionCheckValidity() {
 		return;
 	}
 
+#ifdef ENABLE_CGAL
 	bool valid = false;
 	shared_ptr<const CGAL_Nef_polyhedron> N;
 	if (const PolySet *ps = dynamic_cast<const PolySet *>(this->root_geom.get())) {
@@ -2018,15 +2027,16 @@ void MainWindow::actionCheckValidity() {
             valid = N->p3 ? N->p3->is_valid() : false;
 	}
 	PRINTB("   Valid:      %6s", (valid ? "yes" : "no"));
+#endif // ENABLE_CGAL
 	clearCurrentOutput();
-#endif /* ENABLE_CGAL */
+#endif // ENABLE_CSGIF
 }
 
 void MainWindow::actionExport(export_type_e export_type, const char *type_name, const char *suffix)
 {
 	if (GuiLocker::isLocked()) return;
 	GuiLocker lock;
-#ifdef ENABLE_CGAL
+#ifdef ENABLE_CSGIF
 	setCurrentOutput();
 
 	if (!this->root_geom) {
@@ -2059,11 +2069,12 @@ void MainWindow::actionExport(export_type_e export_type, const char *type_name, 
 		return;
 	}
 
+#ifdef ENABLE_CGAL
 	const CGAL_Nef_polyhedron *N = dynamic_cast<const CGAL_Nef_polyhedron *>(this->root_geom.get());
 	if (N && !N->p3->is_simple()) {
 	 	PRINT("WARNING: Object may not be a valid 2-manifold and may need repair! See http://en.wikibooks.org/wiki/OpenSCAD_User_Manual/STL_Import_and_Export");
 	}
-
+#endif // ENABLE_CGAL
 	QString title = QString(_("Export %1 File")).arg(type_name);
 	QString filter = QString(_("%1 Files (*%2)")).arg(type_name, suffix);
 	QString filename = this->fileName.isEmpty() ? QString(_("Untitled")) + suffix : QFileInfo(this->fileName).baseName() + suffix;
@@ -2133,7 +2144,7 @@ QString MainWindow::get2dExportFilename(QString format, QString extension) {
 		clearCurrentOutput();
 		return QString();
 	}
-	
+
 	return exportFilename;
 #else
 	PRINT("Needs CGAL.");
@@ -2185,7 +2196,7 @@ void MainWindow::actionExportCSG()
 	QString csg_filename = QFileDialog::getSaveFileName(this, _("Export CSG File"),
 	    this->fileName.isEmpty() ? _("Untitled.csg") : QFileInfo(this->fileName).baseName()+".csg",
 	    _("CSG Files (*.csg)"));
-	
+
 	if (csg_filename.isEmpty()) {
 		PRINT("No filename specified. CSG export aborted.");
 		clearCurrentOutput();
@@ -2232,7 +2243,7 @@ void MainWindow::actionCopyViewport()
 void MainWindow::actionFlushCaches()
 {
 	GeometryCache::instance()->clear();
-#ifdef ENABLE_CGAL
+#ifdef ENABLE_CSGIF
 	CGALCache::instance()->clear();
 #endif
 	dxf_dim_cache.clear();
@@ -2244,7 +2255,7 @@ void MainWindow::actionFlushCaches()
 void MainWindow::viewModeActionsUncheck()
 {
 	viewActionPreview->setChecked(false);
-#ifdef ENABLE_CGAL
+#ifdef ENABLE_CSGIF
 	viewActionSurfaces->setChecked(false);
 	viewActionWireframe->setChecked(false);
 #endif
@@ -2272,7 +2283,7 @@ void MainWindow::viewModePreview()
 
 #endif /* ENABLE_OPENCSG */
 
-#ifdef ENABLE_CGAL
+#ifdef ENABLE_CSGIF
 
 void MainWindow::viewModeSurface()
 {
@@ -2341,7 +2352,7 @@ void MainWindow::viewModeShowScaleProportional()
 
 void MainWindow::viewModeAnimate()
 {
-#ifdef ENABLE_CGAL
+#ifdef ENABLE_CSGIF
 	if (viewActionAnimate->isChecked()) {
 		animate_panel->show();
 		actionRenderPreview();
@@ -2355,7 +2366,7 @@ void MainWindow::viewModeAnimate()
 
 void MainWindow::animateUpdateDocChanged()
 {
-	QString current_doc = editor->toPlainText(); 
+	QString current_doc = editor->toPlainText();
 	if (current_doc != last_compiled_doc)
 		animateUpdate();
 }
@@ -2537,7 +2548,7 @@ void MainWindow::dropEvent(QDropEvent *event)
 	for (int i = 0; i < urls.size(); i++) {
 		if (urls[i].scheme() != "file")
 			continue;
-		
+
 		handleFileDrop(urls[i].toLocalFile());
 	}
 	clearCurrentOutput();
@@ -2726,7 +2737,7 @@ void MainWindow::clearCurrentOutput()
 void MainWindow::openCSGSettingsChanged()
 {
 #ifdef ENABLE_OPENCSG
-	OpenCSG::setOption(OpenCSG::AlgorithmSetting, Preferences::inst()->getValue("advanced/forceGoldfeather").toBool() ? 
+	OpenCSG::setOption(OpenCSG::AlgorithmSetting, Preferences::inst()->getValue("advanced/forceGoldfeather").toBool() ?
 	OpenCSG::Goldfeather : OpenCSG::Automatic);
 #endif
 }
@@ -2738,7 +2749,7 @@ void MainWindow::setContentsChanged()
 
 void MainWindow::showFontCacheDialog()
 {
-	if (!MainWindow::fontCacheDialog) MainWindow::fontCacheDialog = new QProgressDialog;	
+	if (!MainWindow::fontCacheDialog) MainWindow::fontCacheDialog = new QProgressDialog;
 	QProgressDialog *dialog = MainWindow::fontCacheDialog;
 
 	dialog->setLabelText(_("Fontconfig needs to update its font cache.\nThis can take up to a couple of minutes."));

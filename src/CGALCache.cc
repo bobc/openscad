@@ -1,6 +1,11 @@
 #include "CGALCache.h"
 #include "printutils.h"
+
+#ifdef ENABLE_CGAL
 #include "CGAL_Nef_polyhedron.h"
+#endif // ENABLE_CGAL
+
+#include "csgif_polyhedron.h"
 
 CGALCache *CGALCache::inst = NULL;
 

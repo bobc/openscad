@@ -13,13 +13,25 @@ CGAL_Nef_polyhedron::CGAL_Nef_polyhedron(CSGIF_poly3 *p)
 // Copy constructor
 CGAL_Nef_polyhedron::CGAL_Nef_polyhedron(const CGAL_Nef_polyhedron &src)
 {
-//	if (src.poly)
-//		this->poly.reset(new CGAL_Nef_polyhedron3(*src.poly));
+	if (src.poly)
+		this->poly.reset(new CSGIF_poly3(*src.poly));
 }
 
 CGAL_Nef_polyhedron& CGAL_Nef_polyhedron::operator+=(const CGAL_Nef_polyhedron &other)
 {
+    PRINT ("csgif +");
 //	(*this->poly) += (*other.poly);
+
+    carve::mesh::MeshSet<3> * mesh1 = this->poly->poly;
+    carve::mesh::MeshSet<3> * mesh2 = other.poly->poly;
+
+    carve::mesh::MeshSet<3> *result = NULL;
+
+    result = carve::csg::CSG().compute(mesh1, mesh2, carve::csg::CSG::UNION, NULL, carve::csg::CSG::CLASSIFY_NORMAL);
+
+    this->poly->poly = result;
+    //this->poly.reset (new CSGIF_poly3 (result));
+
 	return *this;
 }
 

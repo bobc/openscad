@@ -17,6 +17,12 @@ public:
     CSGIF_poly3 (carve::mesh::MeshSet<3> *poly)
     { this->poly = poly; }
 
+    CSGIF_poly3 (const CSGIF_poly3 &src)
+    {
+        // todo: copy mesh?
+        this->poly = src.poly;
+    }
+
     ~CSGIF_poly3 () {}
 
     carve::mesh::MeshSet<3> *poly;
