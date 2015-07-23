@@ -14,6 +14,9 @@ namespace csgif_utils{
 	bool createPolySetFromCsgPolyhedron (const CGAL_Nef_polyhedron &N, PolySet &ps);
 
     CGAL_Nef_polyhedron *applyOperator(const Geometry::ChildList &children, OpenSCADOperator op);
+
+   	Polygon2d *project(const CGAL_Nef_polyhedron &N, bool cut);
+
 }
 
 

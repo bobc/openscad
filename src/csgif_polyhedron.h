@@ -19,8 +19,7 @@ public:
 
     CSGIF_poly3 (const CSGIF_poly3 &src)
     {
-        // todo: copy mesh?
-        this->poly = src.poly;
+        this->poly = src.poly->clone();
     }
 
     ~CSGIF_poly3 () {}

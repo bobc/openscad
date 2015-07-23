@@ -8,6 +8,10 @@
 #include <boost/foreach.hpp>
 #include <boost/unordered_set.hpp>
 
+#include <carve/input.hpp>
+
+extern void csgif_dump_meshset (carve::mesh::MeshSet<3> *meshset);
+
 /*!
 	Triangulates this polygon2d and returns a 2D PolySet.
 */
@@ -21,6 +25,55 @@ PolySet *Polygon2d::tessellate() const
 	return polyset;
 }
 
+
+static carve::mesh::MeshSet<3> *makeCube(const carve::math::Matrix &transform)
+{
+  carve::input::PolyhedronData data;
+
+  data.addVertex(transform * carve::geom::VECTOR(+1.0, +1.0, +1.0));
+  data.addVertex(transform * carve::geom::VECTOR(-1.0, +1.0, +1.0));
+  data.addVertex(transform * carve::geom::VECTOR(-1.0, -1.0, +1.0));
+  data.addVertex(transform * carve::geom::VECTOR(+1.0, -1.0, +1.0));
+  data.addVertex(transform * carve::geom::VECTOR(+1.0, +1.0, -1.0));
+  data.addVertex(transform * carve::geom::VECTOR(-1.0, +1.0, -1.0));
+  data.addVertex(transform * carve::geom::VECTOR(-1.0, -1.0, -1.0));
+  data.addVertex(transform * carve::geom::VECTOR(+1.0, -1.0, -1.0));
+
+  data.addFace(0, 1, 2, 3);
+  data.addFace(7, 6, 5, 4);
+  data.addFace(0, 4, 5, 1);
+  data.addFace(1, 5, 6, 2);
+  data.addFace(2, 6, 7, 3);
+  data.addFace(3, 7, 4, 0);
+
+  return new carve::mesh::MeshSet<3>(data.points, data.getFaceCount(), data.faceIndices);
+}
+
+static bool is_equal (double v1, double v2)
+{
+    return abs(v1-v2) < 0.000000001;
+}
+
+#define Abs(x)    ((x) < 0 ? -(x) : (x))
+#define Max(a, b) ((a) > (b) ? (a) : (b))
+
+#define EPSILON 0.00000000001
+
+bool nearly_equal(double a, double b)
+{
+	double c = Abs(a);
+	double d = Abs(b);
+
+    if ((a<EPSILON) && (b<EPSILON))
+        return true;
+
+	d = Max(c, d);
+
+    if (d != 0.0)
+        d = Abs(a - b) / d;
+
+	return d < EPSILON;
+}
 
 static CGAL_Nef_polyhedron *createCsgPolyhedronFromPolySet(const PolySet &ps)
 {
@@ -39,7 +92,7 @@ static CGAL_Nef_polyhedron *createCsgPolyhedronFromPolySet(const PolySet &ps)
 	if (ps_tri.is_convex())
     {
         PRINT ("is_convex");
-
+#if 0
         //std::vector<carve::mesh::MeshSet<3>::vertex_t> verts;
         std::vector<carve::mesh::MeshSet<3>::vertex_t *> corners;
         std::vector<carve::mesh::MeshSet<3>::face_t *> faces;
@@ -57,10 +110,78 @@ static CGAL_Nef_polyhedron *createCsgPolyhedronFromPolySet(const PolySet &ps)
 		}
 
         carve::mesh::MeshSet<3> *poly_mesh = new carve::mesh::MeshSet<3>(faces);
+#endif // 0
+
+//        carve::mesh::MeshSet<3> *poly_mesh = makeCube(carve::math::Matrix::SCALE(10.0, 10.0, 10.0));
+
+#if 1
+        carve::input::PolyhedronData data;
+
+		std::vector<std::string> vertices;
+
+		BOOST_FOREACH(const Polygon &poly, psq.polygons) {
+		    // poly
+			std::vector<int> face_verts;
+			BOOST_FOREACH(const Vector3d &p, poly) {
+
+                int idx=0;
+                // std::cout << "    v" << idx << " " << p[0] << " " << p[1] << " " << p[2] << " " << "\n";
+
+                // This might not be the most obvious method, but appears more reliable
+                // than comparing doubles.
+				std::stringstream stream;
+				stream << p[0] << " " << p[1] << " " << p[2];
+				std::string vs1 = stream.str();
+
+                std::vector<std::string>::iterator it;
+                it = std::find(vertices.begin(), vertices.end(), vs1);
+
+                if (it != vertices.end())
+                {
+                    idx = std::distance(vertices.begin(), it);
+                    face_verts.push_back (idx);
+                }
+                else
+                {
+                    data.addVertex(carve::geom::VECTOR(p[0], p[1], p[2]));
+                    vertices.push_back(vs1);
+                    face_verts.push_back (vertices.size()-1);
+                }
+
+#if 0
+                // this produces lots of bad mesh
+                for (; idx < data.points.size(); idx++)
+                {
+                    if ( is_equal(p[0], data.points[idx].x) &&
+                         is_equal(p[1], data.points[idx].y) &&
+                         is_equal(p[2], data.points[idx].z)
+                        )
+                    {
+                        face_verts.push_back (idx);
+                        break;
+                    }
+                }
+                if (idx == data.points.size())
+                {
+                    face_verts.push_back (data.addVertex(carve::geom::VECTOR(p[0], p[1], p[2])));
+                }
+#endif
+			}
+
+            data.addFace(face_verts.begin(), face_verts.end());
+		}
+
+        carve::mesh::MeshSet<3> *poly_mesh = new carve::mesh::MeshSet<3>(data.points, data.getFaceCount(), data.faceIndices);
+#endif
+//
+        if (poly_mesh->meshes.size() > 1)
+            PRINT("WARNING: bad poly conversion?");
 
         CSGIF_poly3 *p3 = new CSGIF_poly3 (poly_mesh);
+        CGAL_Nef_polyhedron *result = new CGAL_Nef_polyhedron(p3);
 
-        return new CGAL_Nef_polyhedron(p3);
+        return result;
+
 #if 0
 		typedef CGAL::Epick K;
 		// Collect point cloud
@@ -155,48 +276,6 @@ namespace csgif_utils{
 		return NULL;
     }
 
-#if 0
-        std::vector<carve::mesh::MeshSet<3>::vertex_t> tet_verts;
-        std::vector<carve::mesh::MeshSet<3>::face_t *> tet_faces;
-        std::vector<carve::mesh::MeshSet<3>::vertex_t *> corners;
-
-        tet_verts.push_back(carve::mesh::MeshSet<3>::vertex_t(carve::geom::VECTOR(0.0, 0.0, 0.0)));
-        tet_verts.push_back(carve::mesh::MeshSet<3>::vertex_t(carve::geom::VECTOR(1.0, 0.0, 0.0)));
-        tet_verts.push_back(carve::mesh::MeshSet<3>::vertex_t(carve::geom::VECTOR(0.0, 1.0, 0.0)));
-        tet_verts.push_back(carve::mesh::MeshSet<3>::vertex_t(carve::geom::VECTOR(0.0, 0.0, 1.0)));
-
-        corners.push_back(&tet_verts[0]);
-        corners.push_back(&tet_verts[2]);
-        corners.push_back(&tet_verts[1]);
-        tet_faces.push_back(new carve::mesh::MeshSet<3>::face_t(corners.begin(), corners.end()));
-
-        corners.clear();
-        corners.push_back(&tet_verts[0]);
-        corners.push_back(&tet_verts[1]);
-        corners.push_back(&tet_verts[3]);
-        tet_faces.push_back(new carve::mesh::MeshSet<3>::face_t(corners.begin(), corners.end()));
-
-        corners.clear();
-        corners.push_back(&tet_verts[0]);
-        corners.push_back(&tet_verts[3]);
-        corners.push_back(&tet_verts[2]);
-        tet_faces.push_back(new carve::mesh::MeshSet<3>::face_t(corners.begin(), corners.end()));
-
-        corners.clear();
-        corners.push_back(&tet_verts[1]);
-        corners.push_back(&tet_verts[2]);
-        corners.push_back(&tet_verts[3]);
-        tet_faces.push_back(new carve::mesh::MeshSet<3>::face_t(corners.begin(), corners.end()));
-
-        carve::mesh::MeshSet<3> *tetrahedron = new carve::mesh::MeshSet<3>(tet_faces);
-
-        CSGIF_poly3 *p3 = new CSGIF_poly3 (tetrahedron);
-        CGAL_Nef_polyhedron *pp = new CGAL_Nef_polyhedron(p3);
-
-        return pp;
-    }
-#endif
-
     bool createPolySetFromCsgPolyhedron (const CGAL_Nef_polyhedron &N, PolySet &ps)
     {
         PRINT ("createPolySetFromCsgPolyhedron");
@@ -235,8 +314,15 @@ namespace csgif_utils{
 				}
 
 				// empty op <something> => empty
-				//! if (N->isEmpty()) continue;
+				if (N->isEmpty()) continue;
 
+#if 0
+                //todo: debug
+                std::cout << "-- N (left) --" << "\n";
+                N->dump();
+                std::cout << "-- chN (right) --" << "\n";
+                chN->dump();
+#endif // 0
 				switch (op) {
 
                 case OPENSCAD_UNION:
@@ -256,7 +342,10 @@ namespace csgif_utils{
 					PRINTB("ERROR: Unsupported CGAL operator: %d", op);
 				}
 
-				//TODO
+                //std::cout << "-- RESULT --" << "\n";
+                //N->dump();
+
+				//TODO : not sure what this is, gives error?
 				//!item.first->progress_report();
 			}
 		}
@@ -268,5 +357,16 @@ namespace csgif_utils{
         return N;
     }
 
+    // from cgalutils-project.cc
+	Polygon2d *project(const CGAL_Nef_polyhedron &N, bool cut)
+	{
+		Polygon2d *poly = NULL;
+		if (N.getDimension() != 3) return poly;
+
+        // todo
+        PRINT("ERROR: not implemented");
+
+        return poly;
+	}
 }
 
