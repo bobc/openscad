@@ -396,7 +396,7 @@ SOURCES += src/version_check.cc \
            \
            src/nodedumper.cc \
            src/traverser.cc \
-           src/GeometryEvaluatorNew.cc \
+           src/GeometryEvaluator.cc \
            src/csgif_polyhedron.cc \
            src/csgif_utils.cc \
            src/ModuleCache.cc \
