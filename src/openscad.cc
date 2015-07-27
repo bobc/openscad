@@ -47,13 +47,6 @@
 #include <vector>
 #include <fstream>
 
-#ifdef ENABLE_CGAL
-#include "CGAL_Nef_polyhedron.h"
-#include "cgalutils.h"
-#endif
-
-#include "csgif_polyhedron.h"
-
 #include "csgterm.h"
 #include "CSGTermEvaluator.h"
 #include "CsgInfo.h"
@@ -67,6 +60,8 @@
 #include <boost/foreach.hpp>
 #include "boosty.h"
 
+#include "CSGIF.h"
+
 #ifdef __APPLE__
 #include "AppleEvents.h"
   #ifdef OPENSCAD_UPDATER
@@ -78,7 +73,7 @@
 #define snprintf _snprintf
 #endif
 
-#define ENABLE_CGAL
+
 
 namespace po = boost::program_options;
 namespace fs = boost::filesystem;
@@ -100,7 +95,7 @@ static std::string arg_colorscheme;
 std::string openscad_shortversionnumber = QUOTED(OPENSCAD_SHORTVERSION);
 std::string openscad_versionnumber = QUOTED(OPENSCAD_VERSION);
 
-std::string openscad_displayversionnumber = 
+std::string openscad_displayversionnumber =
 #ifdef OPENSCAD_COMMIT
   QUOTED(OPENSCAD_VERSION)
   " (git " QUOTED(OPENSCAD_COMMIT) ")";
@@ -301,12 +296,12 @@ void set_render_color_scheme(const std::string color_scheme, const bool exit_if_
 	if (color_scheme.empty()) {
 		return;
 	}
-	
+
 	if (ColorMap::inst()->findColorScheme(color_scheme)) {
 		RenderSettings::inst()->colorscheme = color_scheme;
 		return;
 	}
-		
+
 	if (exit_if_not_found) {
 		PRINTB("Unknown color scheme '%s'. Valid schemes:", color_scheme);
 		BOOST_FOREACH (const std::string &name, ColorMap::inst()->colorSchemeNames()) {
@@ -325,19 +320,19 @@ int cmdline(const char *deps_output_file, const std::string &filename, Camera &c
 	const std::string application_path = QApplication::instance()->applicationDirPath().toLocal8Bit().constData();
 #else
 	const std::string application_path = boosty::stringy(boosty::absolute(boost::filesystem::path(argv[0]).parent_path()));
-#endif	
+#endif
 	PlatformUtils::registerApplicationPath(application_path);
 	parser_init();
 	localization_init();
 
 	Tree tree;
-#ifdef ENABLE_CGAL
+#ifdef ENABLE_CSGIF
 	GeometryEvaluator geomevaluator(tree);
 #endif
 	if (arg_info) {
 	    info();
 	}
-	
+
 	const char *stl_output_file = NULL;
 	const char *off_output_file = NULL;
 	const char *amf_output_file = NULL;
@@ -368,7 +363,7 @@ int cmdline(const char *deps_output_file, const std::string &filename, Camera &c
 	}
 
 	set_render_color_scheme(arg_colorscheme, true);
-	
+
 	// Top context - this context only holds builtins
 	ModuleContext top_ctx;
 	top_ctx.registerBuiltin();
@@ -463,24 +458,22 @@ int cmdline(const char *deps_output_file, const std::string &filename, Camera &c
 		}
 	}
 	else {
-#ifdef ENABLE_CGAL
+#ifdef ENABLE_CSGIF
 		if ((echo_output_file || png_output_file) &&
 				(renderer==Render::OPENCSG || renderer==Render::THROWNTOGETHER)) {
 			// echo or OpenCSG png -> don't necessarily need geometry evaluation
 		} else {
 			root_geom = geomevaluator.evaluateGeometry(*tree.root(), true);
-			if (!root_geom) root_geom.reset(new CGAL_Nef_polyhedron());
+			if (!root_geom) root_geom.reset(new CSGIF_polyhedron());
 
-#if CGAL
 			if (renderer == Render::CGAL && root_geom->getDimension() == 3) {
-				const CGAL_Nef_polyhedron *N = dynamic_cast<const CGAL_Nef_polyhedron*>(root_geom.get());
+				const CSGIF_polyhedron *N = dynamic_cast<const CSGIF_polyhedron*>(root_geom.get());
 				if (!N) {
-					N = CGALUtils::createNefPolyhedronFromGeometry(*root_geom);
+					N = CSGIF_Utils::createCsgPolyhedronFromGeometry(*root_geom);
 					root_geom.reset(N);
-					PRINT("Converted to Nef polyhedron");
+					PRINT("Converted to CSG polyhedron");
 				}
 			}
-#endif
 		}
 
 		fs::current_path(original_path);
@@ -525,7 +518,7 @@ int cmdline(const char *deps_output_file, const std::string &filename, Camera &c
 			if (!checkAndExport(root_geom, 2, OPENSCAD_DXF, dxf_output_file))
 				return 1;
 		}
-		
+
 		if (svg_output_file) {
 			if (!checkAndExport(root_geom, 2, OPENSCAD_SVG, svg_output_file))
 				return 1;
@@ -548,7 +541,7 @@ int cmdline(const char *deps_output_file, const std::string &filename, Camera &c
 			}
 		}
 #else
-		PRINT("OpenSCAD has been compiled without CGAL support!\n");
+		PRINT("OpenSCAD has been compiled without CSG support!\n");
 		return 1;
 #endif
 	}
@@ -627,7 +620,7 @@ void dialogInitHandler(FontCacheInitializer *initializer, void *)
 	// Block, in case we're in a separate thread, or the dialog was closed by the user
 	futureWatcher.waitForFinished();
 
-	// We don't always receive the finished signal. We still need the signal to break 
+	// We don't always receive the finished signal. We still need the signal to break
 	// out of the exec() though.
 	QMetaObject::invokeMethod(mainw, "hideFontCacheDialog");
 }
@@ -664,10 +657,10 @@ int gui(vector<string> &inputFiles, const fs::path &original_path, int argc, cha
 #else
 	app.setWindowIcon(QIcon(":/icons/openscad.png"));
 #endif
-	
+
 	// Other global settings
 	qRegisterMetaType<shared_ptr<const Geometry> >();
-	
+
 	const QString &app_path = app.applicationDirPath();
 	PlatformUtils::registerApplicationPath(app_path.toLocal8Bit().constData());
 
@@ -712,7 +705,7 @@ int gui(vector<string> &inputFiles, const fs::path &original_path, int argc, cha
 	QGLFormat::setDefaultFormat(fmt);
 
 	set_render_color_scheme(arg_colorscheme, false);
-	
+
 	bool noInputFiles = false;
 	if (!inputFiles.size()) {
 		noInputFiles = true;
@@ -771,14 +764,14 @@ int main(int argc, char **argv)
 	int rc = 0;
 	bool isGuiLaunched = getenv("GUI_LAUNCHED") != 0;
 	StackCheck::inst()->init();
-	
+
 #ifdef Q_OS_MAC
 	if (isGuiLaunched) set_output_handler(CocoaUtils::nslog, NULL);
 #else
 	PlatformUtils::ensureStdIO();
 #endif
 
-#ifdef CGAL
+#ifdef ENABLE_CGAL
 	// Causes CGAL errors to abort directly instead of throwing exceptions
 	// (which we don't catch). This gives us stack traces without rerunning in gdb.
 	CGAL::set_error_behaviour(CGAL::ABORT);
@@ -872,7 +865,7 @@ int main(int argc, char **argv)
 		if (output_file) help(argv[0], true);
 		output_file = vm["s"].as<string>().c_str();
 	}
-	if (vm.count("x")) { 
+	if (vm.count("x")) {
 		printDeprecation("The -x option is deprecated. Use -o instead.\n");
 		if (output_file) help(argv[0], true);
 		output_file = vm["x"].as<string>().c_str();

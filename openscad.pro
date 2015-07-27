@@ -102,11 +102,6 @@ macx {
   LIBS += -framework Cocoa -framework ApplicationServices
 }
 
-LIBS += -Lcarve/lib -lcarve
-
-INCLUDEPATH += carve/include
-
-
 win* {
   RC_FILE = openscad_win32.rc
   QMAKE_CXXFLAGS += -DNOGDI
@@ -313,7 +308,6 @@ HEADERS += src/typedefs.h \
            src/nodedumper.h \
            src/ModuleCache.h \
            src/GeometryCache.h \
-           src/GeometryEvaluator.h \
            src/CSGTermEvaluator.h \
            src/Tree.h \
 src/DrawingCallback.h \
@@ -396,9 +390,6 @@ SOURCES += src/version_check.cc \
            \
            src/nodedumper.cc \
            src/traverser.cc \
-           src/GeometryEvaluator.cc \
-           src/csgif_polyhedron.cc \
-           src/csgif_utils.cc \
            src/ModuleCache.cc \
            src/GeometryCache.cc \
            src/Tree.cc \
@@ -420,7 +411,6 @@ SOURCES += src/version_check.cc \
            src/builtin.cc \
            src/calc.cc \
            src/export.cc \
-           src/export_png.cc \
            src/import.cc \
            src/renderer.cc \
            src/colormap.cc \
@@ -484,21 +474,24 @@ opencsg {
 }
 
 carve {
-  DEFINES += ENABLE_CSGIF
 
-HEADERS += src/CGALCache.h \
-           src/CSGIF_Renderer.h \
-           src/cgalworker.h
+HEADERS += src/CSGIF_Cache.h \
+           src/CSGIF_worker.h \
+           src/GeometryEvaluator.h \
+           src/carve_Renderer.h \
+           src/carve_polyhedron.h \
+           src/carve_export.h \
+           src/carve_utils.h
 
-SOURCES += src/CGALCache.cc \
-           src/CSGIF_Renderer.cc \
-           src/cgalworker.cc
+SOURCES += src/CSGIF_Cache.cc \
+           src/CSGIF_worker.cc \
+           src/GeometryEvaluator.cc \
+           src/export_png.cc \
+           src/carve_Renderer.cc \
+           src/carve_polyhedron.cc \
+           src/carve_export.cc \
+           src/carve_utils.cc
 
-}
-
-cgal_ogl_helper {
-HEADERS += src/CGAL_OGL_Polyhedron.h \
-           src/OGL_helper.h
 }
 
 cgal {
@@ -506,12 +499,16 @@ HEADERS += src/cgal.h \
            src/cgalfwd.h \
            src/cgalutils.h \
            src/Reindexer.h \
-           src/CGALCache.h \
+           src/GeometryEvaluator.h \
+           src/CSGIF_Cache.h \
+           src/CSGIF_worker.h \
            src/CGALRenderer.h \
+           src/CGAL_OGL_Polyhedron.h \
+           src/OGL_helper.h \
            src/CGAL_Nef_polyhedron.h \
            src/CGAL_Nef3_workaround.h \
            src/convex_hull_3_bugfix.h \
-           src/cgalworker.h \
+           src/cgal_export.h \
            src/Polygon2d-CGAL.h
 
 SOURCES += src/cgalutils.cc \
@@ -519,10 +516,13 @@ SOURCES += src/cgalutils.cc \
            src/cgalutils-project.cc \
            src/cgalutils-tess.cc \
            src/cgalutils-polyhedron.cc \
-           src/CGALCache.cc \
+           src/GeometryEvaluator.cc \
+           src/export_png.cc \
+           src/CSGIF_Cache.cc \
+           src/CSGIF_worker.cc \
            src/CGALRenderer.cc \
            src/CGAL_Nef_polyhedron.cc \
-           src/cgalworker.cc \
+           src/cgal_export.cc \
            src/Polygon2d-CGAL.cc
 }
 

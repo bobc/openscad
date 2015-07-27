@@ -36,18 +36,7 @@
 #define QUOTE(x__) # x__
 #define QUOTED(x__) QUOTE(x__)
 
-#include <carve/carve.hpp>
-
-#include <carve/csg.hpp>
-#include <carve/poly.hpp>
-#include <carve/geom.hpp>
-//#include <carve/interpolator.hpp>
-//#include <carve/csg_triangulator.hpp>
-//#include <carve/polyline.hpp>
-//#include <carve/pointset.hpp>
-
-#include "csgif_polyhedron.h"
-#include "csgif_utils.h"
+#include "CSGIF.h"
 
 #include <fstream>
 
@@ -59,7 +48,8 @@ struct triangle {
 
 void exportFile(const class Geometry *root_geom, std::ostream &output, FileFormat format)
 {
-	if (const CGAL_Nef_polyhedron *N = dynamic_cast<const CGAL_Nef_polyhedron *>(root_geom)) {
+#ifdef ENABLE_CSGIF
+	if (const CSGIF_polyhedron *N = dynamic_cast<const CSGIF_polyhedron *>(root_geom)) {
 
 		switch (format) {
 		case OPENSCAD_STL:
@@ -78,7 +68,9 @@ void exportFile(const class Geometry *root_geom, std::ostream &output, FileForma
 			assert(false && "Unknown file format");
 		}
 	}
-	else {
+	else
+#endif // ENABLE_CSGIF
+        {
 		if (const PolySet *ps = dynamic_cast<const PolySet *>(root_geom)) {
 			switch (format) {
 			case OPENSCAD_STL:
@@ -184,93 +176,25 @@ void export_stl(const PolySet &ps, std::ostream &output)
 }
 
 
-/*!
-	Saves the current 3D CGAL Nef polyhedron as STL to the given file.
-	The file must be open.
- */
-void export_stl(const CGAL_Nef_polyhedron *root_N, std::ostream &output)
-{
-}
-
 void export_off(const class PolySet &ps, std::ostream &output)
 {
-}
-
-void export_off(const CGAL_Nef_polyhedron *root_N, std::ostream &output)
-{
+#ifdef ENABLE_CSGIF
+	// FIXME: Implement this without creating a CSG polyhedron
+	CSGIF_polyhedron *N = CSGIF_Utils::createCsgPolyhedronFromGeometry(ps);
+	export_off(N, output);
+	delete N;
+#endif // ENABLE_CSGIF
 }
 
 void export_amf(const class PolySet &ps, std::ostream &output)
 {
+#ifdef ENABLE_CSGIF
 	// FIXME: Implement this without creating a Csg polyhedron
-	CGAL_Nef_polyhedron *N = csgif_utils::createCsgPolyhedronFromGeometry(ps);
+	CSGIF_polyhedron *N = CSGIF_Utils::createCsgPolyhedronFromGeometry(ps);
 	export_amf(N, output);
 	delete N;
+#endif // ENABLE_CSGIF
 }
-
-/*!
-    Saves the current 3D CGAL Nef polyhedron as AMF to the given file.
-    The file must be open.
- */
-void export_amf(const CGAL_Nef_polyhedron *root_N, std::ostream &output)
-{
-
-    output << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n"
-			<< "<amf unit=\"millimeter\">\r\n"
-			<< " <metadata type=\"producer\">OpenSCAD " << QUOTED(OPENSCAD_VERSION)
-#ifdef OPENSCAD_COMMIT
-			<< " (git " << QUOTED(OPENSCAD_COMMIT) << ")"
-#endif
-			<< "</metadata>\r\n"
-			<< " <object id=\"0\">\r\n"
-			<< "  <mesh>\r\n";
-    output << "   <vertices>\r\n";
-
-    carve::mesh::MeshSet<3> * poly = root_N->poly->poly;
-
-    for (size_t i =0; i < poly->vertex_storage.size(); i++) {
-			output << "    <vertex><coordinates>\r\n";
-			output << "     <x>" << poly->vertex_storage[i].v[0] << "</x>\r\n";
-			output << "     <y>" << poly->vertex_storage[i].v[1] << "</y>\r\n";
-			output << "     <z>" << poly->vertex_storage[i].v[2] << "</z>\r\n";
-			output << "    </coordinates></vertex>\r\n";
-		}
-	output << "   </vertices>\r\n";
-
-	output << "   <volume>\r\n";
-	for (carve::mesh::MeshSet<3>::face_iter i = poly->faceBegin(); i != poly->faceEnd(); ++i) {
-        carve::mesh::MeshSet<3>::face_t *f = *i;
-
-        carve::mesh::MeshSet<3>::face_t::edge_iter_t edge = f->begin();
-        int v1,v2,v3;
-
-        v1 = (*edge).vert - &poly->vertex_storage[0];
-        edge++;
-        v3 = (*edge).vert - &poly->vertex_storage[0];
-        edge++;
-
-        do {
-            v2 = v3;
-            v3 = (*edge).vert - &poly->vertex_storage[0];
-            edge++;
-
-            //
-            output << "    <triangle>\r\n";
-            output << "     <v1>" << v1 << "</v1>\r\n";
-            output << "     <v2>" << v2 << "</v2>\r\n";
-            output << "     <v3>" << v3 << "</v3>\r\n";
-            output << "    </triangle>\r\n";
-        } while (edge != f->end());
-
-        //
-    }
-    output << "   </volume>\r\n";
-
-    output << "  </mesh>\r\n"
-        << " </object>\r\n"
-        << "</amf>\r\n";
-}
-
 
 /*!
 	Saves the current Polygon2d as DXF to the given absolute filename.

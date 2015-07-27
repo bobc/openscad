@@ -1,14 +1,14 @@
-#include "csgif_utils.h"
-#include "csgif_polyhedron.h"
 
 #include "printutils.h"
 #include "Polygon2d.h"
 #include "polyset-utils.h"
 
+#include "CSGIF.h"
+#include <carve/input.hpp>
+
 #include <boost/foreach.hpp>
 #include <boost/unordered_set.hpp>
 
-#include <carve/input.hpp>
 
 extern void csgif_dump_meshset (carve::mesh::MeshSet<3> *meshset);
 
@@ -75,11 +75,11 @@ bool nearly_equal(double a, double b)
 	return d < EPSILON;
 }
 
-static CGAL_Nef_polyhedron *createCsgPolyhedronFromPolySet(const PolySet &ps)
+static CSGIF_polyhedron *createCsgPolyhedronFromPolySet(const PolySet &ps)
 {
     PRINT ("createCsgPolyhedronFromPolySet");
 
-	if (ps.isEmpty()) return new CGAL_Nef_polyhedron();
+	if (ps.isEmpty()) return new CSGIF_polyhedron();
 	assert(ps.getDimension() == 3);
 
 	// Since is_convex doesn't work well with non-planar faces,
@@ -178,7 +178,7 @@ static CGAL_Nef_polyhedron *createCsgPolyhedronFromPolySet(const PolySet &ps)
             PRINT("WARNING: bad poly conversion?");
 
         CSGIF_poly3 *p3 = new CSGIF_poly3 (poly_mesh);
-        CGAL_Nef_polyhedron *result = new CGAL_Nef_polyhedron(p3);
+        CSGIF_polyhedron *result = new CSGIF_polyhedron(p3);
 
         return result;
 
@@ -195,14 +195,14 @@ static CGAL_Nef_polyhedron *createCsgPolyhedronFromPolySet(const PolySet &ps)
 			}
 		}
 
-		if (points.size() <= 3) return new CGAL_Nef_polyhedron();;
+		if (points.size() <= 3) return new CSGIF_polyhedron();;
 
 		// Apply hull
 		CGAL::Polyhedron_3<K> r;
 		CGAL::convex_hull_3(points.begin(), points.end(), r);
 		CGAL_Polyhedron r_exact;
 		CGALUtils::copyPolyhedron(r, r_exact);
-		return new CGAL_Nef_polyhedron(new CGAL_Nef_polyhedron3(r_exact));
+		return new CSGIF_polyhedron(new CGAL_Nef_polyhedron3(r_exact));
 #endif // 0
 	}
     else
@@ -248,19 +248,19 @@ static CGAL_Nef_polyhedron *createCsgPolyhedronFromPolySet(const PolySet &ps)
 	//CGAL::set_error_behaviour(old_behaviour);
 #endif // 0
 
-	return new CGAL_Nef_polyhedron(N);
+	return new CSGIF_polyhedron(N);
 }
 
-static CGAL_Nef_polyhedron *createCsgPolyhedronFromPolygon2d(const Polygon2d &polygon)
+static CSGIF_polyhedron *createCsgPolyhedronFromPolygon2d(const Polygon2d &polygon)
 {
 	shared_ptr<PolySet> ps(polygon.tessellate());
 	return createCsgPolyhedronFromPolySet(*ps);
 }
 
-namespace csgif_utils{
+namespace CSGIF_Utils{
 
 
-    CGAL_Nef_polyhedron *createCsgPolyhedronFromGeometry(const class Geometry &geom)
+    CSGIF_polyhedron *createCsgPolyhedronFromGeometry(const class Geometry &geom)
     {
         PRINT ("createCsgPolyhedronFromGeometry");
 
@@ -276,7 +276,7 @@ namespace csgif_utils{
 		return NULL;
     }
 
-    bool createPolySetFromCsgPolyhedron (const CGAL_Nef_polyhedron &N, PolySet &ps)
+    bool createPolySetFromCsgPolyhedron (const CSGIF_polyhedron &N, PolySet &ps)
     {
         PRINT ("createPolySetFromCsgPolyhedron");
         return false;
@@ -286,16 +286,16 @@ namespace csgif_utils{
 	Applies op to all children and returns the result.
 	The child list should be guaranteed to contain non-NULL 3D or empty Geometry objects
 */
-	CGAL_Nef_polyhedron *applyOperator(const Geometry::ChildList &children, OpenSCADOperator op)
+	CSGIF_polyhedron *applyOperator(const Geometry::ChildList &children, OpenSCADOperator op)
 	{
-		CGAL_Nef_polyhedron *N = NULL;
+		CSGIF_polyhedron *N = NULL;
 		PRINT ("applyOperator");
 
 		try {
 
 			BOOST_FOREACH(const Geometry::ChildItem &item, children) {
 				const shared_ptr<const Geometry> &chgeom = item.second;
-				shared_ptr<const CGAL_Nef_polyhedron> chN = dynamic_pointer_cast<const CGAL_Nef_polyhedron>(chgeom);
+				shared_ptr<const CSGIF_polyhedron> chN = dynamic_pointer_cast<const CSGIF_polyhedron>(chgeom);
 				if (!chN) {
 					const PolySet *chps = dynamic_cast<const PolySet*>(chgeom.get());
 					if (chps) chN.reset(createCsgPolyhedronFromGeometry(*chps));
@@ -303,7 +303,7 @@ namespace csgif_utils{
 
 				// Initialize N with first expected geometric object
 				if (!N) {
-					N = new CGAL_Nef_polyhedron(*chN);
+					N = new CSGIF_polyhedron(*chN);
 					continue;
 				}
 
@@ -358,7 +358,7 @@ namespace csgif_utils{
     }
 
     // from cgalutils-project.cc
-	Polygon2d *project(const CGAL_Nef_polyhedron &N, bool cut)
+	Polygon2d *project(const CSGIF_polyhedron &N, bool cut)
 	{
 		Polygon2d *poly = NULL;
 		if (N.getDimension() != 3) return poly;

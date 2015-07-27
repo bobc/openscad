@@ -3,7 +3,6 @@
 #include "Tree.h"
 #include "Geometry.h"
 #include "GeometryCache.h"
-#include "CGALCache.h"
 #include "Polygon2d.h"
 #include "module.h"
 #include "state.h"
@@ -16,28 +15,17 @@
 #include "projectionnode.h"
 #include "textnode.h"
 #include "rendernode.h"
-
 #include "clipper-utils.h"
 #include "polyset-utils.h"
 #include "polyset.h"
 #include "calc.h"
 #include "dxfdata.h"
 
-//#include "cgal.h"
-//#include <CGAL/Cartesian.h>
-//#include <CGAL/convex_hull_2.h>
-//#include <CGAL/Point_2.h>
-
+//#include <algorithm>
 #include <boost/foreach.hpp>
 
-//#include "carve/carve.hpp"
+#include "CSGIF.h"
 
-#include <carve/csg.hpp>
-#include <carve/poly.hpp>
-#include <carve/geom.hpp>
-
-#include "csgif_polyhedron.h"
-#include "csgif_utils.h"
 
 GeometryEvaluator::GeometryEvaluator(const class Tree &tree):
 	tree(tree)
@@ -52,9 +40,9 @@ shared_ptr<const Geometry> GeometryEvaluator::evaluateGeometry(const AbstractNod
 																															 bool allownef)
 {
 	if (!GeometryCache::instance()->contains(this->tree.getIdString(node))) {
-		shared_ptr<const CGAL_Nef_polyhedron> N;
-		if (CGALCache::instance()->contains(this->tree.getIdString(node))) {
-			N = CGALCache::instance()->get(this->tree.getIdString(node));
+		shared_ptr<const CSGIF_polyhedron> N;
+		if (CSGIF_Cache::instance()->contains(this->tree.getIdString(node))) {
+			N = CSGIF_Cache::instance()->get(this->tree.getIdString(node));
 		}
 
 		// If not found in any caches, we need to evaluate the geometry
@@ -67,12 +55,12 @@ shared_ptr<const Geometry> GeometryEvaluator::evaluateGeometry(const AbstractNod
 		}
 
 		if (!allownef) {
-			if (shared_ptr<const CGAL_Nef_polyhedron> N = dynamic_pointer_cast<const CGAL_Nef_polyhedron>(this->root)) {
+			if (shared_ptr<const CSGIF_polyhedron> N = dynamic_pointer_cast<const CSGIF_polyhedron>(this->root)) {
 				PolySet *ps = new PolySet(3);
 				ps->setConvexity(N->getConvexity());
 				this->root.reset(ps);
                 if (!N->isEmpty()) {
-                    bool err = csgif_utils::createPolySetFromCsgPolyhedron(*N, *ps);
+                    bool err = CSGIF_Utils::createPolySetFromCsgPolyhedron(*N, *ps);
                     if (err) {
                         PRINT("ERROR: Nef->PolySet failed");
                     }
@@ -89,9 +77,6 @@ shared_ptr<const Geometry> GeometryEvaluator::evaluateGeometry(const AbstractNod
 GeometryEvaluator::ResultObject GeometryEvaluator::applyToChildren(const AbstractNode &node, OpenSCADOperator op)
 {
 	unsigned int dim = 0;
-
-	PRINT("operator");
-
 	BOOST_FOREACH(const Geometry::ChildItem &item, this->visitedchildren[node.index()]) {
 		if (!item.first->modinst->isBackground() && item.second) {
 			if (!dim) dim = item.second->getDimension();
@@ -113,29 +98,29 @@ GeometryEvaluator::ResultObject GeometryEvaluator::applyToChildren(const Abstrac
 /*!
 	Applies the operator to all child nodes of the given node.
 
-	May return NULL or any 3D Geometry object (can be either PolySet or CGAL_Nef_polyhedron)
+	May return NULL or any 3D Geometry object (can be either PolySet or CSGIF_polyhedron)
 */
 GeometryEvaluator::ResultObject GeometryEvaluator::applyToChildren3D(const AbstractNode &node, OpenSCADOperator op)
 {
 	Geometry::ChildList children = collectChildren3D(node);
 	if (children.size() == 0) return ResultObject();
 
-#if ENABLE_CGAL
+#ifdef ENABLE_HULL
 	if (op == OPENSCAD_HULL) {
 		PolySet *ps = new PolySet(3, true);
 
-		if (CGALUtils::applyHull(children, *ps)) {
+		if (CSGIF_Utils::applyHull(children, *ps)) {
 			return ps;
 		}
 
 		delete ps;
 		return ResultObject();
 	}
-#endif
+#endif // ENABLE_HULL
 	// Only one child -> this is a noop
 	if (children.size() == 1) return ResultObject(children.front().second);
 
-#if ENABLE_CGAL
+#ifdef ENABLE_MINKOWSKI
 	if (op == OPENSCAD_MINKOWSKI) {
 		Geometry::ChildList actualchildren;
 		BOOST_FOREACH(const Geometry::ChildItem &item, children) {
@@ -143,13 +128,13 @@ GeometryEvaluator::ResultObject GeometryEvaluator::applyToChildren3D(const Abstr
 		}
 		if (actualchildren.empty()) return ResultObject();
 		if (actualchildren.size() == 1) return ResultObject(actualchildren.front().second);
-		return ResultObject(CGALUtils::applyMinkowski(actualchildren));
+		return ResultObject(CSGIF_Utils::applyMinkowski(actualchildren));
 	}
-#endif // ENABLE_CGAL
+#endif // ENABLE_MINKOWSKI
 
-	CGAL_Nef_polyhedron *N = csgif_utils::applyOperator(children, op);
+	CSGIF_polyhedron *N = CSGIF_Utils::applyOperator(children, op);
 	// FIXME: Clarify when we can return NULL and what that means
-	if (!N) N = new CGAL_Nef_polyhedron;
+	if (!N) N = new CSGIF_polyhedron;
 	return ResultObject(N);
 }
 
@@ -164,7 +149,7 @@ Polygon2d *GeometryEvaluator::applyHull2D(const AbstractNode &node)
 	std::vector<const Polygon2d *> children = collectChildren2D(node);
 	Polygon2d *geometry = new Polygon2d();
 
-#if ENABLE_CGAL
+#ifdef ENABLE_CGAL_2D
 	typedef CGAL::Point_2<CGAL::Cartesian<double> > CGALPoint2;
 	// Collect point cloud
 	std::list<CGALPoint2> points;
@@ -187,23 +172,23 @@ Polygon2d *GeometryEvaluator::applyHull2D(const AbstractNode &node)
 		}
 		geometry->addOutline(outline);
 	}
-#endif // ENABLE_CGAL
+#endif // ENABLE_CGAL_2D
 	return geometry;
 }
 
-#if ENABLE_CGAL
+#ifdef ENABLE_HULL
 Geometry *GeometryEvaluator::applyHull3D(const AbstractNode &node)
 {
 	Geometry::ChildList children = collectChildren3D(node);
 
 	PolySet *P = new PolySet(3);
-	if (CGALUtils::applyHull(children, *P)) {
+	if (CSGIF_Utils::applyHull(children, *P)) {
 		return P;
 	}
 	delete P;
 	return NULL;
 }
-#endif // ENABLE_CGAL
+#endif // ENABLE_HULL
 
 Polygon2d *GeometryEvaluator::applyMinkowski2D(const AbstractNode &node)
 {
@@ -259,9 +244,9 @@ void GeometryEvaluator::smartCacheInsert(const AbstractNode &node,
 {
 	const std::string &key = this->tree.getIdString(node);
 
-	shared_ptr<const CGAL_Nef_polyhedron> N = dynamic_pointer_cast<const CGAL_Nef_polyhedron>(geom);
+	shared_ptr<const CSGIF_polyhedron> N = dynamic_pointer_cast<const CSGIF_polyhedron>(geom);
 	if (N) {
-		if (!CGALCache::instance()->contains(key)) CGALCache::instance()->insert(key, N);
+		if (!CSGIF_Cache::instance()->contains(key)) CSGIF_Cache::instance()->insert(key, N);
 	}
 	else {
 		if (!GeometryCache::instance()->contains(key)) {
@@ -276,7 +261,7 @@ bool GeometryEvaluator::isSmartCached(const AbstractNode &node)
 {
 	const std::string &key = this->tree.getIdString(node);
 	return (GeometryCache::instance()->contains(key) ||
-					CGALCache::instance()->contains(key));
+					CSGIF_Cache::instance()->contains(key));
 }
 
 shared_ptr<const Geometry> GeometryEvaluator::smartCacheGet(const AbstractNode &node, bool preferNef)
@@ -284,8 +269,8 @@ shared_ptr<const Geometry> GeometryEvaluator::smartCacheGet(const AbstractNode &
 	const std::string &key = this->tree.getIdString(node);
 	shared_ptr<const Geometry> geom;
 	bool hasgeom = GeometryCache::instance()->contains(key);
-	bool hascgal = CGALCache::instance()->contains(key);
-	if (hascgal && (preferNef || !hasgeom)) geom = CGALCache::instance()->get(key);
+	bool hascsg = CSGIF_Cache::instance()->contains(key);
+	if (hascsg && (preferNef || !hasgeom)) geom = CSGIF_Cache::instance()->get(key);
 	else if (hasgeom) geom = GeometryCache::instance()->get(key);
 	return geom;
 }
@@ -393,8 +378,6 @@ void GeometryEvaluator::addToParent(const State &state,
 */
 Response GeometryEvaluator::visit(State &state, const AbstractNode &node)
 {
-    PRINT ("implicit");
-
 	if (state.isPrefix()) {
 		if (isSmartCached(node)) return PruneTraversal;
 		state.setPreferNef(true); // Improve quality of CSG by avoiding conversion loss
@@ -462,11 +445,11 @@ Response GeometryEvaluator::visit(State &state, const RenderNode &node)
 				newps->setConvexity(node.convexity);
 				geom = newps;
 			}
-			else if (shared_ptr<const CGAL_Nef_polyhedron> N = dynamic_pointer_cast<const CGAL_Nef_polyhedron>(geom)) {
+			else if (shared_ptr<const CSGIF_polyhedron> N = dynamic_pointer_cast<const CSGIF_polyhedron>(geom)) {
 				// If we got a const object, make a copy
-				shared_ptr<CGAL_Nef_polyhedron> newN;
-				if (res.isConst()) newN.reset((CGAL_Nef_polyhedron*)N->copy());
-				else newN = dynamic_pointer_cast<CGAL_Nef_polyhedron>(res.ptr());
+				shared_ptr<CSGIF_polyhedron> newN;
+				if (res.isConst()) newN.reset((CSGIF_polyhedron*)N->copy());
+				else newN = dynamic_pointer_cast<CSGIF_polyhedron>(res.ptr());
 				newN->setConvexity(node.convexity);
 				geom = newN;
 			}
@@ -487,8 +470,6 @@ Response GeometryEvaluator::visit(State &state, const RenderNode &node)
 */
 Response GeometryEvaluator::visit(State &state, const LeafNode &node)
 {
-	PRINT("leaf");
-
     if (state.isPrefix()) {
 		shared_ptr<const Geometry> geom;
 		if (!isSmartCached(node)) {
@@ -609,12 +590,12 @@ Response GeometryEvaluator::visit(State &state, const TransformNode &node)
 							geom = newps;
 						}
 						else {
-							shared_ptr<const CGAL_Nef_polyhedron> N = dynamic_pointer_cast<const CGAL_Nef_polyhedron>(geom);
+							shared_ptr<const CSGIF_polyhedron> N = dynamic_pointer_cast<const CSGIF_polyhedron>(geom);
 							assert(N);
 							// If we got a const object, make a copy
-							shared_ptr<CGAL_Nef_polyhedron> newN;
-							if (res.isConst()) newN.reset((CGAL_Nef_polyhedron*)N->copy());
-							else newN = dynamic_pointer_cast<CGAL_Nef_polyhedron>(res.ptr());
+							shared_ptr<CSGIF_polyhedron> newN;
+							if (res.isConst()) newN.reset((CSGIF_polyhedron*)N->copy());
+							else newN = dynamic_pointer_cast<CSGIF_polyhedron>(res.ptr());
 							newN->transform(node.matrix);
 							geom = newN;
 						}
@@ -939,11 +920,11 @@ Response GeometryEvaluator::visit(State &state, const ProjectionNode &node)
 #if 0
 					shared_ptr<const PolySet> chPS = dynamic_pointer_cast<const PolySet>(chgeom);
 					const PolySet *ps2d = NULL;
-					shared_ptr<const CGAL_Nef_polyhedron> chN = dynamic_pointer_cast<const CGAL_Nef_polyhedron>(chgeom);
+					shared_ptr<const CSGIF_polyhedron> chN = dynamic_pointer_cast<const CSGIF_polyhedron>(chgeom);
 					if (chN) chPS.reset(chN->convertToPolyset());
 					if (chPS) ps2d = PolysetUtils::flatten(*chPS);
 					if (ps2d) {
-						CGAL_Nef_polyhedron *N2d = CGALUtils::createNefPolyhedronFromGeometry(*ps2d);
+						CSGIF_polyhedron *N2d = CSGIF_Utils::createNefPolyhedronFromGeometry(*ps2d);
 						poly = N2d->convertToPolygon2d();
 					}
 #endif
@@ -955,10 +936,10 @@ Response GeometryEvaluator::visit(State &state, const ProjectionNode &node)
 					// project chgeom -> polygon2d
 					shared_ptr<const PolySet> chPS = dynamic_pointer_cast<const PolySet>(chgeom);
 					if (!chPS) {
-						shared_ptr<const CGAL_Nef_polyhedron> chN = dynamic_pointer_cast<const CGAL_Nef_polyhedron>(chgeom);
+						shared_ptr<const CSGIF_polyhedron> chN = dynamic_pointer_cast<const CSGIF_polyhedron>(chgeom);
 						if (chN) {
 							PolySet *ps = new PolySet(3);
-							bool err = csgif_utils::createPolySetFromCsgPolyhedron(*chN, *ps);
+							bool err = CSGIF_Utils::createPolySetFromCsgPolyhedron(*chN, *ps);
 							if (err) {
 								PRINT("ERROR: Nef->PolySet failed");
 							}
@@ -992,12 +973,12 @@ Response GeometryEvaluator::visit(State &state, const ProjectionNode &node)
 			else {
 				shared_ptr<const Geometry> newgeom = applyToChildren3D(node, OPENSCAD_UNION).constptr();
 				if (newgeom) {
-					shared_ptr<const CGAL_Nef_polyhedron> Nptr = dynamic_pointer_cast<const CGAL_Nef_polyhedron>(newgeom);
+					shared_ptr<const CSGIF_polyhedron> Nptr = dynamic_pointer_cast<const CSGIF_polyhedron>(newgeom);
 					if (!Nptr) {
-						Nptr.reset(csgif_utils::createCsgPolyhedronFromGeometry(*newgeom));
+						Nptr.reset(CSGIF_Utils::createCsgPolyhedronFromGeometry(*newgeom));
 					}
 					if (!Nptr->isEmpty()) {
-						Polygon2d *poly = csgif_utils::project(*Nptr, node.cut_mode);
+						Polygon2d *poly = CSGIF_Utils::project(*Nptr, node.cut_mode);
 						if (poly) {
 							poly->setConvexity(node.convexity);
 							geom.reset(poly);
@@ -1018,7 +999,7 @@ Response GeometryEvaluator::visit(State &state, const ProjectionNode &node)
 	input: List of 2D or 3D objects (not mixed)
 	output: any Geometry
 	operation:
-	  o Perform cgal operation
+	  o Perform CSG operation
  */
 Response GeometryEvaluator::visit(State &state, const CgaladvNode &node)
 {
@@ -1055,7 +1036,7 @@ Response GeometryEvaluator::visit(State &state, const CgaladvNode &node)
 					else editablegeom = res.ptr();
 					geom = editablegeom;
 
-					shared_ptr<CGAL_Nef_polyhedron> N = dynamic_pointer_cast<CGAL_Nef_polyhedron>(editablegeom);
+					shared_ptr<CSGIF_polyhedron> N = dynamic_pointer_cast<CSGIF_polyhedron>(editablegeom);
 					if (N) {
 						N->resize(node.newsize, node.autosize);
 					}

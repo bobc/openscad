@@ -72,7 +72,7 @@ AbstractNode *ImportModule::instantiate(const Context *ctx, const ModuleInstanti
 
   // FIXME: This is broken. Tag as deprecated and fix
 	// Map old argnames to new argnames for compatibility
-	// To fix: 
+	// To fix:
   // o after c.setVariables()
 	//   - if "filename" in evalctx: deprecated-warning && v.set_variable("file", value);
 	//   - if "layername" in evalctx: deprecated-warning && v.set_variable("layer", value);

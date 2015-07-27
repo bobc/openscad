@@ -35,9 +35,8 @@
 #include "export.h"
 #include "builtin.h"
 #include "Tree.h"
-#include "CGAL_Nef_polyhedron.h"
+#include "CSGIF.h"
 #include "GeometryEvaluator.h"
-#include "CGALCache.h"
 #include "stackcheck.h"
 
 #ifndef _MSC_VER
@@ -65,23 +64,23 @@ po::variables_map parse_options(int argc, char *argv[])
 	po::options_description desc("Allowed options");
 	desc.add_options()
 		("help,h", "help message")
-		("cgalcachesize", po::value<size_t>(), "Set CGAL cache size in bytes");
-	
+		("cgalcachesize", po::value<size_t>(), "Set CSG cache size in bytes");
+
 	po::options_description hidden("Hidden options");
 	hidden.add_options()
 		("input-file", po::value<string>(), "input file")
 		("output-file", po::value<string>(), "output file");
-	
+
 	po::positional_options_description p;
 	p.add("input-file", 1).add("output-file", 1);
-	
+
 	po::options_description all_options;
 	all_options.add(desc).add(hidden);
-	
+
 	po::variables_map vm;
 	po::store(po::command_line_parser(argc, argv).options(all_options).positional(p).run(), vm);
 	po::notify(vm);
-	
+
 	return vm;
 }
 
@@ -112,8 +111,8 @@ int main(int argc, char **argv)
 		exit(1);
 	}
 
-	CGALCache::instance()->setMaxSize(cgalcachesize);
-	
+	CSGIF_Cache::instance()->setMaxSize(cgalcachesize);
+
 	Builtins::instance()->initialize();
 
 	fs::path original_path = fs::current_path();

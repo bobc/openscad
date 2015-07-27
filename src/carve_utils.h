@@ -1,21 +1,20 @@
 #pragma once
 
 #include "polyset.h"
-#include "csgif_polyhedron.h"
 #include "enums.h"
 #include "Geometry.h"
 
-namespace csgif_utils{
+namespace CSGIF_Utils{
 
 
-	CGAL_Nef_polyhedron *createCsgPolyhedronFromGeometry(const class Geometry &geom);
+	CSGIF_polyhedron *createCsgPolyhedronFromGeometry(const class Geometry &geom);
 
 //	bool createPolySetFromNefPolyhedron3(const CGAL_Nef_polyhedron3 &N, PolySet &ps);
-	bool createPolySetFromCsgPolyhedron (const CGAL_Nef_polyhedron &N, PolySet &ps);
+	bool createPolySetFromCsgPolyhedron (const CSGIF_polyhedron &N, PolySet &ps);
 
-    CGAL_Nef_polyhedron *applyOperator(const Geometry::ChildList &children, OpenSCADOperator op);
+    CSGIF_polyhedron *applyOperator(const Geometry::ChildList &children, OpenSCADOperator op);
 
-   	Polygon2d *project(const CGAL_Nef_polyhedron &N, bool cut);
+   	Polygon2d *project(const CSGIF_polyhedron &N, bool cut);
 
 }
 

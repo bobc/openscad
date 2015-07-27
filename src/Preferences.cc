@@ -35,8 +35,8 @@
 #include "GeometryCache.h"
 #include "AutoUpdater.h"
 #include "feature.h"
-#ifdef ENABLE_CGAL
-#include "CGALCache.h"
+#ifdef ENABLE_CSGIF
+#include "CSGIF_Cache.h"
 #endif
 #include "colormap.h"
 #include "rendersettings.h"
@@ -114,7 +114,7 @@ Preferences::Preferences(QWidget *parent) : QMainWindow(parent)
 }
 
 void Preferences::init() {
-	
+
 	// Editor pane
 	// Setup default font (Try to use a nice monospace font)
 	QString fontfamily;
@@ -151,13 +151,13 @@ void Preferences::init() {
 
 	// reset GUI fontsize if fontSize->addItem emitted signals that changed it.
 	this->fontSize->setEditText( QString("%1").arg( savedsize ) );
-	
+
 	// Setup default settings
 	this->defaultmap["advanced/opencsg_show_warning"] = true;
 	this->defaultmap["advanced/enable_opencsg_opengl1x"] = true;
 	this->defaultmap["advanced/polysetCacheSize"] = uint(GeometryCache::instance()->maxSize());
-#ifdef ENABLE_CGAL
-	this->defaultmap["advanced/cgalCacheSize"] = uint(CGALCache::instance()->maxSize());
+#ifdef ENABLE_CSGIF
+	this->defaultmap["advanced/cgalCacheSize"] = uint(CSGIF_Cache::instance()->maxSize());
 #endif
 	this->defaultmap["advanced/openCSGLimit"] = RenderSettings::inst()->openCSGTermLimit;
 	this->defaultmap["advanced/forceGoldfeather"] = false;
@@ -190,9 +190,9 @@ void Preferences::init() {
 	// 3D View pane
 	this->defaultmap["3dview/colorscheme"] = "Cornfield";
 
-  // Advanced pane	
+  // Advanced pane
 	QValidator *validator = new QIntValidator(this);
-#ifdef ENABLE_CGAL
+#ifdef ENABLE_CSGIF_
 	this->cgalCacheSizeEdit->setValidator(validator);
 #endif
 	this->polysetCacheSizeEdit->setValidator(validator);
@@ -225,7 +225,7 @@ Preferences::~Preferences()
  * Add a page for the preferences GUI. This handles both the action grouping
  * and the registration of the widget for each action to have a generalized
  * callback to switch pages.
- * 
+ *
  * @param group The action group for all page actions. This one will have the
  *              callback attached after creating all actions/pages.
  * @param action The action specific for the added page.
@@ -241,7 +241,7 @@ Preferences::addPrefPage(QActionGroup *group, QAction *action, QWidget *widget)
 
 /**
  * Callback to switch pages in the preferences GUI.
- * 
+ *
  * @param action The action triggered by the user.
  */
 void
@@ -254,7 +254,7 @@ Preferences::actionTriggered(QAction *action)
  * Callback for the dynamically created checkboxes on the features
  * page. The specific Feature object is associated as property with
  * the callback.
- * 
+ *
  * @param state the state of the checkbox.
  */
 void Preferences::featuresCheckBoxToggled(bool state)
@@ -275,7 +275,7 @@ void Preferences::featuresCheckBoxToggled(bool state)
 
 /**
  * Setup feature GUI and synchronize the Qt settings with the feature values.
- * 
+ *
  * When running in GUI mode, the feature setting that might have been set
  * from commandline is ignored. This always uses the value coming from the
  * QSettings.
@@ -286,7 +286,7 @@ Preferences::setupFeaturesPage()
 	int row = 0;
 	for (Feature::iterator it = Feature::begin();it != Feature::end();it++) {
 		Feature *feature = *it;
-		
+
 		QString featurekey = QString("feature/%1").arg(QString::fromStdString(feature->get_name()));
 		this->defaultmap[featurekey] = false;
 
@@ -303,16 +303,16 @@ Preferences::setupFeaturesPage()
 		feature->enable(value);
 		cb->setChecked(value);
 		cb->setProperty(featurePropertyName, QVariant::fromValue<Feature *>(feature));
-		connect(cb, SIGNAL(toggled(bool)), this, SLOT(featuresCheckBoxToggled(bool)));		
+		connect(cb, SIGNAL(toggled(bool)), this, SLOT(featuresCheckBoxToggled(bool)));
 		gridLayoutExperimentalFeatures->addWidget(cb, row, 0, 1, 2, Qt::AlignLeading);
 		row++;
-		
+
 		QLabel *l = new QLabel(QString::fromStdString(feature->get_description()), pageFeatures);
 		l->setTextFormat(Qt::RichText);
 		gridLayoutExperimentalFeatures->addWidget(l, row, 1, 1, 1, Qt::AlignLeading);
 		row++;
 	}
-	// Force fixed indentation, the checkboxes use column span of 2 so 
+	// Force fixed indentation, the checkboxes use column span of 2 so
 	// first row is not constrained in size by the visible controls. The
 	// fixed size space essentially gives the first row the width of the
 	// spacer item itself.
@@ -435,8 +435,8 @@ void Preferences::on_cgalCacheSizeEdit_textChanged(const QString &text)
 {
 	QSettings settings;
 	settings.setValue("advanced/cgalCacheSize", text);
-#ifdef ENABLE_CGAL
-	CGALCache::instance()->setMaxSize(text.toULong());
+#ifdef ENABLE_CSGIF_
+	CSGIF_Cache::instance()->setMaxSize(text.toULong());
 #endif
 }
 
@@ -476,7 +476,7 @@ void Preferences::on_mouseWheelZoomBox_toggled(bool state)
 void Preferences::on_launcherBox_toggled(bool state)
 {
 	QSettings settings;
- 	settings.setValue("launcher/showOnStartup", state);	
+ 	settings.setValue("launcher/showOnStartup", state);
 }
 
 void Preferences::on_checkBoxShowWarningsIn3dView_toggled(bool val)
@@ -612,7 +612,7 @@ QVariant Preferences::getValue(const QString &key) const
 
 void Preferences::updateGUI()
 {
-	QList<QListWidgetItem *> found = 
+	QList<QListWidgetItem *> found =
 		this->colorSchemeChooser->findItems(getValue("3dview/colorscheme").toString(),
 																				Qt::MatchExactly);
 	if (!found.isEmpty()) this->colorSchemeChooser->setCurrentItem(found.first());
@@ -752,7 +752,7 @@ void Preferences::create(QStringList colorSchemes)
     foreach (std::string name, names) {
 	renderColorSchemes << name.c_str();
     }
-    
+
     instance = new Preferences();
     instance->syntaxHighlight->clear();
     instance->syntaxHighlight->addItems(colorSchemes);
@@ -765,6 +765,6 @@ void Preferences::create(QStringList colorSchemes)
 
 Preferences *Preferences::inst() {
     assert(instance != NULL);
-    
+
     return instance;
 }

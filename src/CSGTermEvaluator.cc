@@ -29,8 +29,8 @@
 	with OpenCSG.
 */
 
-shared_ptr<CSGTerm> CSGTermEvaluator::evaluateCSGTerm(const AbstractNode &node, 
-																					 std::vector<shared_ptr<CSGTerm> > &highlights, 
+shared_ptr<CSGTerm> CSGTermEvaluator::evaluateCSGTerm(const AbstractNode &node,
+																					 std::vector<shared_ptr<CSGTerm> > &highlights,
 																					 std::vector<shared_ptr<CSGTerm> > &background)
 {
 	Traverser evaluate(*this, node, Traverser::PRE_AND_POSTFIX);
@@ -87,11 +87,11 @@ Response CSGTermEvaluator::visit(State &state, const AbstractIntersectionNode &n
 	return ContinueTraversal;
 }
 
-static shared_ptr<CSGTerm> evaluate_csg_term_from_geometry(const State &state, 
-																					std::vector<shared_ptr<CSGTerm> > &highlights, 
-																					std::vector<shared_ptr<CSGTerm> > &background, 
+static shared_ptr<CSGTerm> evaluate_csg_term_from_geometry(const State &state,
+																					std::vector<shared_ptr<CSGTerm> > &highlights,
+																					std::vector<shared_ptr<CSGTerm> > &background,
 																					const shared_ptr<const Geometry> &geom,
-																					const ModuleInstantiation *modinst, 
+																					const ModuleInstantiation *modinst,
 																					const AbstractNode &node)
 {
 	std::stringstream stream;
@@ -139,12 +139,14 @@ Response CSGTermEvaluator::visit(State &state, const AbstractPolyNode &node)
 	if (state.isPostfix()) {
 		shared_ptr<CSGTerm> t1;
 		if (this->geomevaluator) {
+#ifdef ENABLE_CSGIF
 			shared_ptr<const Geometry> geom = this->geomevaluator->evaluateGeometry(node, false);
 			if (geom) {
-				t1 = evaluate_csg_term_from_geometry(state, this->highlights, this->background, 
+				t1 = evaluate_csg_term_from_geometry(state, this->highlights, this->background,
 																						 geom, node.modinst, node);
 			}
 			node.progress_report();
+#endif // ENABLE_CSGIF
 		}
 		this->stored_term[node.index()] = t1;
 		addToParent(state, node);
@@ -206,12 +208,14 @@ Response CSGTermEvaluator::visit(State &state, const RenderNode &node)
 		shared_ptr<CSGTerm> t1;
 		shared_ptr<const Geometry> geom;
 		if (this->geomevaluator) {
+#ifdef ENABLE_CSGIF
 			geom = this->geomevaluator->evaluateGeometry(node, false);
 			if (geom) {
-				t1 = evaluate_csg_term_from_geometry(state, this->highlights, this->background, 
+				t1 = evaluate_csg_term_from_geometry(state, this->highlights, this->background,
 																						 geom, node.modinst, node);
 			}
 			node.progress_report();
+#endif // ENABLE_CSGIF
 		}
 		this->stored_term[node.index()] = t1;
 		addToParent(state, node);
@@ -226,12 +230,14 @@ Response CSGTermEvaluator::visit(State &state, const CgaladvNode &node)
     // FIXME: Calling evaluator directly since we're not a PolyNode. Generalize this.
 		shared_ptr<const Geometry> geom;
 		if (this->geomevaluator) {
+#ifdef ENABLE_CSGIF
 			geom = this->geomevaluator->evaluateGeometry(node, false);
 			if (geom) {
-				t1 = evaluate_csg_term_from_geometry(state, this->highlights, this->background, 
+				t1 = evaluate_csg_term_from_geometry(state, this->highlights, this->background,
 																						 geom, node.modinst, node);
 			}
 			node.progress_report();
+#endif // ENABLE_CSGIF
 		}
 		this->stored_term[node.index()] = t1;
 		addToParent(state, node);

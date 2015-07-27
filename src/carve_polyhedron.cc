@@ -1,23 +1,22 @@
-//#include "CGAL_Nef_polyhedron.h"
-//#include "cgalutils.h"
-#include "csgif_polyhedron.h"
+
 #include "printutils.h"
 #include "polyset.h"
-//#include "svg.h"
 
-CGAL_Nef_polyhedron::CGAL_Nef_polyhedron(CSGIF_poly3 *p)
+#include "CSGIF.h"
+
+CSGIF_polyhedron::CSGIF_polyhedron(CSGIF_poly3 *p)
 {
 	if (p) poly.reset(p);
 }
 
 // Copy constructor
-CGAL_Nef_polyhedron::CGAL_Nef_polyhedron(const CGAL_Nef_polyhedron &src)
+CSGIF_polyhedron::CSGIF_polyhedron(const CSGIF_polyhedron &src)
 {
 	if (src.poly)
 		this->poly.reset(new CSGIF_poly3(*src.poly));
 }
 
-CGAL_Nef_polyhedron& CGAL_Nef_polyhedron::operator+=(const CGAL_Nef_polyhedron &other)
+CSGIF_polyhedron& CSGIF_polyhedron::operator+=(const CSGIF_polyhedron &other)
 {
     PRINT ("csgif union");
 //	(*this->poly) += (*other.poly);
@@ -35,7 +34,7 @@ CGAL_Nef_polyhedron& CGAL_Nef_polyhedron::operator+=(const CGAL_Nef_polyhedron &
 	return *this;
 }
 
-CGAL_Nef_polyhedron& CGAL_Nef_polyhedron::operator*=(const CGAL_Nef_polyhedron &other)
+CSGIF_polyhedron& CSGIF_polyhedron::operator*=(const CSGIF_polyhedron &other)
 {
 //	(*this->poly) *= (*other.poly);
 
@@ -53,7 +52,7 @@ CGAL_Nef_polyhedron& CGAL_Nef_polyhedron::operator*=(const CGAL_Nef_polyhedron &
 	return *this;
 }
 
-CGAL_Nef_polyhedron& CGAL_Nef_polyhedron::operator-=(const CGAL_Nef_polyhedron &other)
+CSGIF_polyhedron& CSGIF_polyhedron::operator-=(const CSGIF_polyhedron &other)
 {
     PRINT ("csgif difference");
 
@@ -69,29 +68,29 @@ CGAL_Nef_polyhedron& CGAL_Nef_polyhedron::operator-=(const CGAL_Nef_polyhedron &
 	return *this;
 }
 
-CGAL_Nef_polyhedron &CGAL_Nef_polyhedron::minkowski(const CGAL_Nef_polyhedron &other)
+CSGIF_polyhedron &CSGIF_polyhedron::minkowski(const CSGIF_polyhedron &other)
 {
 	//(*this->poly) = CGAL::minkowski_sum_3(*this->poly, *other.poly);
 	return *this;
 }
 
-size_t CGAL_Nef_polyhedron::memsize() const
+size_t CSGIF_polyhedron::memsize() const
 {
 	if (this->isEmpty()) return 0;
 
-	size_t memsize = sizeof(CGAL_Nef_polyhedron);
+	size_t memsize = sizeof(CSGIF_polyhedron);
 	//memsize += this->poly->bytes();
 	return memsize;
 }
 
-bool CGAL_Nef_polyhedron::isEmpty() const
+bool CSGIF_polyhedron::isEmpty() const
 {
 	//return !this->poly || this->poly->is_empty();
 	return !this->poly;
 }
 
 
-void CGAL_Nef_polyhedron::resize(Vector3d newsize,
+void CSGIF_polyhedron::resize(Vector3d newsize,
 																 const Eigen::Matrix<bool,3,1> &autosize)
 {
 }
@@ -118,7 +117,7 @@ void csgif_dump_meshset (carve::mesh::MeshSet<3> *meshset)
     }
 }
 
-std::string CGAL_Nef_polyhedron::dump() const
+std::string CSGIF_polyhedron::dump() const
 {
 //	return OpenSCAD::dump_svg( *this->poly );
     csgif_dump_meshset(poly->poly);
@@ -127,7 +126,7 @@ std::string CGAL_Nef_polyhedron::dump() const
 }
 
 
-void CGAL_Nef_polyhedron::transform( const Transform3d &matrix )
+void CSGIF_polyhedron::transform( const Transform3d &matrix )
 {
 	if (!this->isEmpty()) {
 		if (matrix.matrix().determinant() == 0) {

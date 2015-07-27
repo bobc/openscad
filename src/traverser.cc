@@ -5,7 +5,9 @@
 #include <algorithm>
 #include <boost/foreach.hpp>
 
-void Traverser::execute() 
+#include "printutils.h"
+
+void Traverser::execute()
 {
 	State state(NULL);
 	traverse(this->root, state);
@@ -15,7 +17,9 @@ Response Traverser::traverse(const AbstractNode &node, const State &state)
 {
 	State newstate = state;
 	newstate.setNumChildren(node.getChildren().size());
-	
+
+	PRINTB("node %s", node.name());
+
 	Response response = ContinueTraversal;
 	if (traversaltype == PREFIX || traversaltype == PRE_AND_POSTFIX) {
 		newstate.setPrefix(true);

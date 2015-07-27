@@ -1,7 +1,7 @@
 cgal {
-  DEFINES += ENABLE_CGAL
+  DEFINES += ENABLE_CSGIF ENABLE_CGAL ENABLE_CGAL_2D
 
-  # Optionally specify location of CGAL using the 
+  # Optionally specify location of CGAL using the
   # CGALDIR env. variable
   CGAL_DIR = $$(CGALDIR)
   !isEmpty(CGAL_DIR) {
@@ -12,14 +12,14 @@ cgal {
 
   CONFIG(mingw-cross-env) {
     LIBS += -lgmp -lmpfr -lCGAL
-    QMAKE_CXXFLAGS += -frounding-math 
+    QMAKE_CXXFLAGS += -frounding-math
   } else {
     win* {
-      *-g++* { 
-        QMAKE_CXXFLAGS += -frounding-math 
+      *-g++* {
+        QMAKE_CXXFLAGS += -frounding-math
       }
     } else {
-      QMAKE_CXXFLAGS += -frounding-math 
+      QMAKE_CXXFLAGS += -frounding-math
     }
     LIBS += -lCGAL -lmpfr -lgmp
   }

@@ -16,11 +16,11 @@
 #include <CGAL/normal_vector_newell_3.h>
 #include <CGAL/Handle_hash_function.h>
 
-#include <CGAL/config.h> 
-#include <CGAL/version.h> 
+#include <CGAL/config.h>
+#include <CGAL/version.h>
 
 // Apply CGAL bugfix for CGAL-4.5.x
-#if CGAL_VERSION_NR > CGAL_VERSION_NUMBER(4,5,1) || CGAL_VERSION_NR < CGAL_VERSION_NUMBER(4,5,0) 
+#if CGAL_VERSION_NR > CGAL_VERSION_NUMBER(4,5,1) || CGAL_VERSION_NR < CGAL_VERSION_NUMBER(4,5,0)
 #include <CGAL/convex_hull_3.h>
 #else
 #include "convex_hull_3_bugfix.h"
@@ -35,9 +35,9 @@
 #include <boost/foreach.hpp>
 #include <boost/unordered_set.hpp>
 
-static CGAL_Nef_polyhedron *createNefPolyhedronFromPolySet(const PolySet &ps)
+static CSGIF_polyhedron *createNefPolyhedronFromPolySet(const PolySet &ps)
 {
-	if (ps.isEmpty()) return new CGAL_Nef_polyhedron();
+	if (ps.isEmpty()) return new CSGIF_polyhedron();
 	assert(ps.getDimension() == 3);
 
 	// Since is_convex doesn't work well with non-planar faces,
@@ -59,14 +59,14 @@ static CGAL_Nef_polyhedron *createNefPolyhedronFromPolySet(const PolySet &ps)
 			}
 		}
 
-		if (points.size() <= 3) return new CGAL_Nef_polyhedron();;
+		if (points.size() <= 3) return new CSGIF_polyhedron();;
 
 		// Apply hull
 		CGAL::Polyhedron_3<K> r;
 		CGAL::convex_hull_3(points.begin(), points.end(), r);
 		CGAL_Polyhedron r_exact;
 		CGALUtils::copyPolyhedron(r, r_exact);
-		return new CGAL_Nef_polyhedron(new CGAL_Nef_polyhedron3(r_exact));
+		return new CSGIF_polyhedron(new CGAL_Nef_polyhedron3(r_exact));
 	}
 
 	CGAL_Nef_polyhedron3 *N = NULL;
@@ -104,10 +104,10 @@ static CGAL_Nef_polyhedron *createNefPolyhedronFromPolySet(const PolySet &ps)
 			PRINTB("ERROR: Alternate construction failed. CGAL error in CGAL_Nef_polyhedron3(): %s", e.what());
 		}
 	CGAL::set_error_behaviour(old_behaviour);
-	return new CGAL_Nef_polyhedron(N);
+	return new CSGIF_polyhedron(N);
 }
 
-static CGAL_Nef_polyhedron *createNefPolyhedronFromPolygon2d(const Polygon2d &polygon)
+static CSGIF_polyhedron *createNefPolyhedronFromPolygon2d(const Polygon2d &polygon)
 {
 	shared_ptr<PolySet> ps(polygon.tessellate());
 	return createNefPolyhedronFromPolySet(*ps);
@@ -126,6 +126,10 @@ namespace CGALUtils {
 		if (points.size()) result = CGAL::bounding_box(points.begin(), points.end());
 		return result;
 	}
+}
+
+
+namespace CSGIF_Utils {
 
 	namespace {
 
@@ -150,14 +154,14 @@ namespace CGALUtils {
 
   /*!
 		Check if all faces of a polyset is within 0.1 degree of being convex.
-		
+
 		NB! This function can give false positives if the polyset contains
 		non-planar faces. To be on the safe side, consider passing a tessellated polyset.
 		See issue #1061.
 	*/
 	bool is_approximately_convex(const PolySet &ps) {
 
-		const double angle_threshold = cos(.1/180*M_PI); // .1Â°
+		const double angle_threshold = cos(.1/180*M_PI); // .1°
 
 		typedef CGAL::Simple_cartesian<double> K;
 		typedef K::Vector_3 Vector;
@@ -238,7 +242,7 @@ namespace CGALUtils {
 	}
 
 
-	CGAL_Nef_polyhedron *createNefPolyhedronFromGeometry(const Geometry &geom)
+	CSGIF_polyhedron *createCsgPolyhedronFromGeometry(const Geometry &geom)
 	{
 		const PolySet *ps = dynamic_cast<const PolySet*>(&geom);
 		if (ps) {
@@ -252,11 +256,20 @@ namespace CGALUtils {
 		return NULL;
 	}
 
+    bool createPolySetFromCsgPolyhedron(const CSGIF_polyhedron &N, PolySet &ps)
+	{
+	    return CGALUtils::createPolySetFromNefPolyhedron3(*N.p3, ps);
+	}
+
+}; // namespace CSGIF_Utils
+
+namespace CGALUtils {
+
 /*
-	Create a PolySet from a Nef Polyhedron 3. return false on success, 
-	true on failure. The trick to this is that Nef Polyhedron3 faces have 
-	'holes' in them. . . while PolySet (and many other 3d polyhedron 
-	formats) do not allow for holes in their faces. The function documents 
+	Create a PolySet from a Nef Polyhedron 3. return false on success,
+	true on failure. The trick to this is that Nef Polyhedron3 faces have
+	'holes' in them. . . while PolySet (and many other 3d polyhedron
+	formats) do not allow for holes in their faces. The function documents
 	the method used to deal with this
 */
 #if 1
@@ -336,7 +349,7 @@ namespace CGALUtils {
 		std::cerr.precision(20);
 		for (size_t i=0;i<allVertices.size();i++) {
 			std::cerr << verts[i][0] << ", " << verts[i][1] << ", " << verts[i][2] << "\n";
-		}		
+		}
 #endif // debug
 
 			/* at this stage, we have a sequence of polygons. the first
@@ -385,7 +398,7 @@ namespace CGALUtils {
 		std::cerr.precision(20);
 		for (size_t i=0;i<allVertices.size();i++) {
 			std::cerr << verts[i][0] << ", " << verts[i][1] << ", " << verts[i][2] << "\n";
-		}		
+		}
 #endif // debug
 
 		return err;

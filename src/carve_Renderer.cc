@@ -35,18 +35,7 @@
 #include "polyset-utils.h"
 #include "printutils.h"
 
-#include "CSGIF_Renderer.h"
-
-#include <carve/carve.hpp>
-#include <carve/vector.hpp>
-#include <carve/mesh.hpp>
-#include <carve/debug_hooks.hpp>
-#include <carve/poly.hpp>
-
-//#include "CGALRenderer.h"
-//#include "CGAL_OGL_Polyhedron.h"
-//#include "CGAL_Nef_polyhedron.h"
-//#include "cgal.h"
+#include "CSGIF.h"
 
 //#include "Preferences.h"
 
@@ -64,7 +53,7 @@ CSGIF_Renderer::CSGIF_Renderer(shared_ptr<const class Geometry> geom)
 	else if (shared_ptr<const Polygon2d> poly = dynamic_pointer_cast<const Polygon2d>(geom)) {
 		this->polyset.reset(poly->tessellate());
 	}
-	else if (shared_ptr<const CGAL_Nef_polyhedron> new_N = dynamic_pointer_cast<const CGAL_Nef_polyhedron>(geom)) {
+	else if (shared_ptr<const CSGIF_polyhedron> new_N = dynamic_pointer_cast<const CSGIF_polyhedron>(geom)) {
 		assert(new_N->getDimension() == 3);
 		if (!new_N->isEmpty()) {
 			this->N = new_N;

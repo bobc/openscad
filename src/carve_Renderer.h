@@ -1,8 +1,9 @@
 #pragma once
 
 #include "renderer.h"
-//#include "CGAL_Nef_polyhedron.h"
-#include "csgif_polyhedron.h"
+
+#include "CSGIF.h"
+
 
 class CSGIF_Renderer : public Renderer
 {
@@ -19,6 +20,6 @@ private:
 
 //	mutable shared_ptr<class CGAL_OGL_Polyhedron> polyhedron;
 
-	shared_ptr<const CGAL_Nef_polyhedron> N;
+	shared_ptr<const CSGIF_polyhedron> N;
 	shared_ptr<const class PolySet> polyset;
 };

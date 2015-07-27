@@ -30,10 +30,10 @@ namespace PolysetUtils {
 	}
 
 /* Tessellation of 3d PolySet faces
-	 
+
 	 This code is for tessellating the faces of a 3d PolySet, assuming that
 	 the faces are near-planar polygons.
-	 
+
 	 The purpose of this code is originally to fix github issue 349. Our CGAL
 	 kernel does not accept polygons for Nef_Polyhedron_3 if each of the
 	 points is not exactly coplanar. "Near-planar" or "Almost planar" polygons
@@ -42,7 +42,7 @@ namespace PolysetUtils {
 	 are perfectly coplanar (triangles, for example), we can get CGAL to accept
 	 the polyhedron() input.
 */
-	
+
 /* Given a 3D PolySet with near planar polygonal faces, tessellate the
 	 faces. As of writing, our only tessellation method is triangulation
 	 using CGAL's Constrained Delaunay algorithm. This code assumes the input
@@ -66,7 +66,7 @@ namespace PolysetUtils {
 				outps.append_poly(pgon);
 				continue;
 			}
-			
+
 			polygons.push_back(std::vector<IndexedFace>());
 			std::vector<IndexedFace> &faces = polygons.back();
 			faces.push_back(IndexedFace());
@@ -108,7 +108,7 @@ namespace PolysetUtils {
 
 	bool is_approximately_convex(const PolySet &ps) {
 #ifdef ENABLE_CGAL
-		return CGALUtils::is_approximately_convex(ps);
+		return CSGIF_Utils::is_approximately_convex(ps);
 #else
 		return false;
 #endif

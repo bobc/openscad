@@ -46,7 +46,7 @@ private:
 		ResultObject(shared_ptr<Geometry> &g) : is_const(false), pointer(g) {}
 		bool isConst() const { return is_const; }
 		shared_ptr<Geometry> ptr() { assert(!is_const); return pointer; }
-		shared_ptr<const Geometry> constptr() const { 
+		shared_ptr<const Geometry> constptr() const {
 			return is_const ? const_pointer : static_pointer_cast<const Geometry>(pointer);
 		}
 	private:
@@ -62,7 +62,7 @@ private:
 	Geometry::ChildList collectChildren3D(const AbstractNode &node);
 #ifdef ENABLE_CGAL
 	Geometry *applyHull3D(const AbstractNode &node);
-	void applyResize3D(class CGAL_Nef_polyhedron &N, const Vector3d &newsize, const Eigen::Matrix<bool,3,1> &autosize);
+	void applyResize3D(class CSGIF_polyhedron &N, const Vector3d &newsize, const Eigen::Matrix<bool,3,1> &autosize);
 #endif
 	Polygon2d *applyMinkowski2D(const AbstractNode &node);
 	Polygon2d *applyHull2D(const AbstractNode &node);

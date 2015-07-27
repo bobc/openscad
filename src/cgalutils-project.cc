@@ -16,11 +16,11 @@
 #include <CGAL/normal_vector_newell_3.h>
 #include <CGAL/Handle_hash_function.h>
 
-#include <CGAL/config.h> 
-#include <CGAL/version.h> 
+#include <CGAL/config.h>
+#include <CGAL/version.h>
 
 // Apply CGAL bugfix for CGAL-4.5.x
-#if CGAL_VERSION_NR > CGAL_VERSION_NUMBER(4,5,1) || CGAL_VERSION_NR < CGAL_VERSION_NUMBER(4,5,0) 
+#if CGAL_VERSION_NR > CGAL_VERSION_NUMBER(4,5,1) || CGAL_VERSION_NR < CGAL_VERSION_NUMBER(4,5,0)
 #include <CGAL/convex_hull_3.h>
 #else
 #include "convex_hull_3_bugfix.h"
@@ -60,7 +60,7 @@ static void add_outline_to_poly(CGAL_Nef_polyhedron2::Explorer &explorer,
 static Polygon2d *convertToPolygon2d(const CGAL_Nef_polyhedron2 &p2)
 {
 	Polygon2d *poly = new Polygon2d;
-	
+
 	typedef CGAL_Nef_polyhedron2::Explorer Explorer;
 	typedef Explorer::Face_const_iterator fci_t;
 	typedef Explorer::Halfedge_around_face_const_circulator heafcc_t;
@@ -182,14 +182,14 @@ void ZRemover::visit(CGAL_Nef_polyhedron3::Halffacet_const_handle hfacet)
 
 
 
-namespace CGALUtils {
+namespace CSGIF_Utils {
 
-	Polygon2d *project(const CGAL_Nef_polyhedron &N, bool cut)
+	Polygon2d *project(const CSGIF_polyhedron &N, bool cut)
 	{
 		Polygon2d *poly = NULL;
 		if (N.getDimension() != 3) return poly;
 
-		CGAL_Nef_polyhedron newN;
+		CSGIF_polyhedron newN;
 		if (cut) {
 			CGAL::Failure_behaviour old_behaviour = CGAL::set_error_behaviour(CGAL::THROW_EXCEPTION);
 			try {
@@ -217,13 +217,13 @@ namespace CGALUtils {
 					PRINTB("ERROR: CGAL error in CGALUtils::project during bigbox intersection: %s", e.what());
 				}
 			}
-				
+
 			if (!newN.p3 || newN.p3->is_empty()) {
 				CGAL::set_error_behaviour(old_behaviour);
 				PRINT("WARNING: projection() failed.");
 				return poly;
 			}
-				
+
 			PRINTDB("%s",OpenSCAD::svg_header(480, 100000));
 			try {
 				ZRemover zremover;
@@ -245,7 +245,7 @@ namespace CGALUtils {
 				PRINTB("ERROR: CGAL error in CGALUtils::project while flattening: %s", e.what());
 			}
 			PRINTD("</svg>");
-				
+
 			CGAL::set_error_behaviour(old_behaviour);
 		}
 		// In projection mode all the triangles are projected manually into the XY plane

@@ -16,6 +16,7 @@
 #include <QSet>
 #include <QTime>
 #include <QIODevice>
+#include "CSGIF_worker.h"
 
 enum export_type_e {
 	EXPORT_TYPE_UNKNOWN,
@@ -54,12 +55,9 @@ public:
 	shared_ptr<class CSGTerm> root_raw_term;           // Result of CSG term rendering
 	shared_ptr<CSGTerm> root_norm_term;          // Normalized CSG products
 	class CSGChain *root_chain;
-#ifdef ENABLE_CGAL
+#ifdef ENABLE_CSGIF
 	shared_ptr<const class Geometry> root_geom;
-	class CGALRenderer *cgalRenderer;
-#elif defined(ENABLE_CSGIF)
-	shared_ptr<const class Geometry> root_geom;
-	class CSGIF_Renderer *cgalRenderer;
+	class CSGIF_Renderer *csgifRenderer;
 #endif
 #ifdef ENABLE_OPENCSG
 	class OpenCSGRenderer *opencsgRenderer;
@@ -272,7 +270,7 @@ private:
 	bool procevents;
 	class QTemporaryFile *tempFile;
 	class ProgressWidget *progresswidget;
-	class CGALWorker *cgalworker;
+	class CSGIF_Worker *csgifworker;
 	QMutex consolemutex;
 	bool contentschanged; // Set if the source code has changes since the last render (F6)
 
