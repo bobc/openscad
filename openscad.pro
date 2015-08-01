@@ -490,7 +490,38 @@ SOURCES += src/CSGIF_Cache.cc \
            src/carve_Renderer.cc \
            src/carve_polyhedron.cc \
            src/carve_export.cc \
-           src/carve_utils.cc
+           src/carve_utils.cc \
+           \
+           src/IndexedMesh.cpp \
+            carve/lib/aabb.cpp \
+            carve/lib/carve.cpp \
+            carve/lib/convex_hull.cpp \
+            carve/lib/csg.cpp \
+            carve/lib/csg_collector.cpp \
+            carve/lib/edge.cpp \
+            carve/lib/face.cpp \
+            carve/lib/carve_geom.cpp \
+            carve/lib/geom2d.cpp \
+            carve/lib/geom3d.cpp \
+            carve/lib/intersect.cpp \
+            carve/lib/intersect_classify_edge.cpp \
+            carve/lib/intersect_classify_group.cpp \
+            carve/lib/intersect_debug.cpp \
+            carve/lib/intersect_face_division.cpp \
+            carve/lib/intersect_group.cpp \
+            carve/lib/intersect_half_classify_group.cpp \
+            carve/lib/intersection.cpp \
+            carve/lib/math.cpp \
+            carve/lib/carve_mesh.cpp \
+            carve/lib/octree.cpp \
+            carve/lib/pointset.cpp \
+            carve/lib/polyhedron.cpp \
+            carve/lib/polyline.cpp \
+            carve/lib/shewchuk_predicates.cpp \
+            carve/lib/tag.cpp \
+            carve/lib/timing.cpp \
+            carve/lib/triangle_intersection.cpp \
+            carve/lib/triangulator.cpp
 
 }
 
