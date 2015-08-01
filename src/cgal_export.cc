@@ -48,7 +48,7 @@ struct triangle {
 };
 
 /*!
-	Saves the given CGAL Polyhedon2 as STL to the given file.
+	Saves the given CGAL Polyhedron as STL to the given file.
 	The file must be open.
  */
 static void export_stl(const CGAL_Polyhedron &P, std::ostream &output)

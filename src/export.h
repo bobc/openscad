@@ -18,6 +18,9 @@ void export_stl(const class CSGIF_polyhedron *root_N, std::ostream &output);
 void export_off(const CSGIF_polyhedron *root_N, std::ostream &output);
 void export_amf(const class CSGIF_polyhedron *root_N, std::ostream &output);
 void export_png(const CSGIF_polyhedron *root_N, Camera &c, std::ostream &output);
+
+void export_stl_files(const class CSGIF_polyhedron *root_N, const char *filename);
+
 #endif // ENABLE_CSGIF
 
 // void exportFile(const class Geometry *root_geom, std::ostream &output, FileFormat format);

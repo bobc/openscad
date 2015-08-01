@@ -1819,7 +1819,7 @@ void MainWindow::cgalRender()
 	this->csgifRenderer = NULL;
 	this->root_geom.reset();
 
-	PRINT("Rendering Polygon Mesh using CGAL...");
+	PRINT("Rendering Polygon Mesh using " CSGIF_NAME "...");
 
 	this->progresswidget = new ProgressWidget(this);
 	connect(this->progresswidget, SIGNAL(requestShow()), this, SLOT(showProgress()));

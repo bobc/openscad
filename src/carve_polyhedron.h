@@ -8,33 +8,44 @@
 
 #include "CSGIF.h"
 
-class CSGIF_poly3
+class Carve_volume
 {
 public:
-    CSGIF_poly3 (carve::mesh::MeshSet<3> *poly)
-    { this->poly = poly; }
-
-    CSGIF_poly3 (const CSGIF_poly3 &src)
+    Carve_volume (carve::mesh::MeshSet<3> *poly)
     {
-        this->poly = src.poly->clone();
+        this->poly = poly;
     }
 
-    ~CSGIF_poly3 () {}
+    Carve_volume (const Carve_volume &src)
+    {
+        this->poly = src.poly->clone();
+        this->hasColor = src.hasColor;
+        this->color[0] = src.color[0];
+        this->color[1] = src.color[1];
+        this->color[2] = src.color[2];
+        this->color[3] = src.color[3];
+    }
 
-    carve::mesh::MeshSet<3> *poly;
+    Carve_volume () {
+        hasColor = false;
+        color[0] = color[1] = color[2] = 0.5f;
+    }
+
+    ~Carve_volume () {
+    }
 
     // attributes
     // color
-    bool has_color;
+    bool hasColor;
     Color4f color;
 
-    //std::vector<carve::mesh::MeshSet<3> > *polys;
+    carve::mesh::MeshSet<3> *poly;
 };
 
 class CSGIF_polyhedron : public Geometry
 {
 public:
-	CSGIF_polyhedron(CSGIF_poly3 *p = NULL);
+	CSGIF_polyhedron(Carve_volume *p = NULL);
 
 	CSGIF_polyhedron(const CSGIF_polyhedron &src);
 	~CSGIF_polyhedron() {}
@@ -48,9 +59,18 @@ public:
 	virtual bool isEmpty() const;
 	virtual Geometry *copy() const { return new CSGIF_polyhedron(*this); }
 
+	virtual void setColor(const Color4f &c) {
+	    color = c; hasColor = true;
+	    for (size_t i=0; i < this->Volumes.size(); i++) {
+            Volumes[i].hasColor = true;
+            Volumes[i].color = c;
+	    }
+    };
+
 	void reset() {
-		poly.reset();
+		Volumes.clear();
 	}
+
 	CSGIF_polyhedron &operator+=(const CSGIF_polyhedron &other);
 	CSGIF_polyhedron &operator*=(const CSGIF_polyhedron &other);
 	CSGIF_polyhedron &operator-=(const CSGIF_polyhedron &other);
@@ -59,5 +79,7 @@ public:
 	void transform( const Transform3d &matrix );
 	void resize(Vector3d newsize, const Eigen::Matrix<bool,3,1> &autosize);
 
-	shared_ptr<CSGIF_poly3> poly;   //vector poly_group
+	//shared_ptr<CSGIF_poly3> poly;   //vector poly_group
+	std::vector<Carve_volume> Volumes;
+
 };

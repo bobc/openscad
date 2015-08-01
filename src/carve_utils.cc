@@ -177,8 +177,11 @@ static CSGIF_polyhedron *createCsgPolyhedronFromPolySet(const PolySet &ps)
         if (poly_mesh->meshes.size() > 1)
             PRINT("WARNING: bad poly conversion?");
 
-        CSGIF_poly3 *p3 = new CSGIF_poly3 (poly_mesh);
-        CSGIF_polyhedron *result = new CSGIF_polyhedron(p3);
+        Carve_volume *new_volume = new Carve_volume (poly_mesh);
+        new_volume->hasColor = ps.hasColor;
+        new_volume->color = ps.color;
+
+        CSGIF_polyhedron *result = new CSGIF_polyhedron(new_volume);
 
         return result;
 
@@ -210,7 +213,7 @@ static CSGIF_polyhedron *createCsgPolyhedronFromPolySet(const PolySet &ps)
         PRINT ("not_convex");
     }
 
-	CSGIF_poly3 *N = NULL;
+	Carve_volume *volume = NULL;
 	bool plane_error = false;
 #if 0
 	//CGAL::Failure_behaviour old_behaviour = CGAL::set_error_behaviour(CGAL::THROW_EXCEPTION);
@@ -248,7 +251,7 @@ static CSGIF_polyhedron *createCsgPolyhedronFromPolySet(const PolySet &ps)
 	//CGAL::set_error_behaviour(old_behaviour);
 #endif // 0
 
-	return new CSGIF_polyhedron(N);
+	return new CSGIF_polyhedron(volume);
 }
 
 static CSGIF_polyhedron *createCsgPolyhedronFromPolygon2d(const Polygon2d &polygon)

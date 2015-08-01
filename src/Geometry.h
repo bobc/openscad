@@ -13,7 +13,7 @@ public:
   typedef std::pair<const class AbstractNode *, shared_ptr<const Geometry> > ChildItem;
   typedef std::list<ChildItem> ChildList;
 
-	Geometry() : convexity(1) {}
+	Geometry() : convexity(1) { hasColor = false; color[0] = color[1] = color[2] = 0.5f;}
 	virtual ~Geometry() {}
 
 	virtual size_t memsize() const = 0;
@@ -26,6 +26,11 @@ public:
 	unsigned int getConvexity() const { return convexity; }
 	void setConvexity(int c) { this->convexity = c; }
 
+	virtual void setColor(const Color4f &c) { color = c; hasColor = true; }
+
+    bool hasColor;
+    Color4f color;
 protected:
 	int convexity;
+
 };

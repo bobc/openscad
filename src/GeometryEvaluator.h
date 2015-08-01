@@ -34,6 +34,9 @@ public:
 	virtual Response visit(State &state, const TextNode &node);
 	virtual Response visit(State &state, const OffsetNode &node);
 
+    virtual Response visit(State &state, const ColorNode &node);
+
+
 	const Tree &getTree() const { return this->tree; }
 
 private:

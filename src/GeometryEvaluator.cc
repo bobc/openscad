@@ -15,6 +15,7 @@
 #include "projectionnode.h"
 #include "textnode.h"
 #include "rendernode.h"
+#include "colornode.h"
 #include "clipper-utils.h"
 #include "polyset-utils.h"
 #include "polyset.h"
@@ -49,7 +50,7 @@ shared_ptr<const Geometry> GeometryEvaluator::evaluateGeometry(const AbstractNod
 		if (N) {
 			this->root = N;
 		}
-    else {
+        else {
 			Traverser trav(*this, node, Traverser::PRE_AND_POSTFIX);
 			trav.execute();
 		}
@@ -1090,4 +1091,52 @@ Response GeometryEvaluator::visit(State &state, const AbstractIntersectionNode &
 	return ContinueTraversal;
 }
 
+Response GeometryEvaluator::visit(State &state, const ColorNode &node)
+{
+	if (state.isPrefix()) {
+		if (isSmartCached(node)) return PruneTraversal;
+//		if (!state.color().isValid()) state.setColor(node.color); //?
+	}
+
+	if (state.isPostfix()) {
+		shared_ptr<const class Geometry> geom;
+		if (!isSmartCached(node)) {
+            ResultObject res = applyToChildren(node, OPENSCAD_UNION);
+			geom = res.constptr();
+			// 3d only?
+			// merge volumes ?
+			// copy const
+			// polyset or CSGIF_poly
+			//geom->setColor (node.color);
+
+			if (geom->getDimension() == 3) {
+                shared_ptr<const PolySet> ps = dynamic_pointer_cast<const PolySet>(geom);
+                if (ps) {
+                    // If we got a const object, make a copy
+                    shared_ptr<PolySet> newps;
+                    if (res.isConst()) newps.reset(new PolySet(*ps));
+                    else newps = dynamic_pointer_cast<PolySet>(res.ptr());
+                    newps->setColor (node.color);
+                    geom = newps;
+                }
+                else {
+                    shared_ptr<const CSGIF_polyhedron> N = dynamic_pointer_cast<const CSGIF_polyhedron>(geom);
+                    assert(N);
+                    // If we got a const object, make a copy
+                    shared_ptr<CSGIF_polyhedron> newN;
+                    if (res.isConst()) newN.reset((CSGIF_polyhedron*)N->copy());
+                    else newN = dynamic_pointer_cast<CSGIF_polyhedron>(res.ptr());
+                    newN->setColor (node.color);
+                    geom = newN;
+                }
+            }
+
+		}
+		else {
+			geom = smartCacheGet(node, state.preferNef());
+		}
+		addToParent(state, node, geom);
+	}
+	return ContinueTraversal;
+}
 

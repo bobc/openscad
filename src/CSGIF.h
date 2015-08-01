@@ -39,6 +39,8 @@
 #define ENABLE_MINKOWSKI
 #define ENABLE_HULL
 
+#define CSGIF_NAME "CGAL"
+
 #include "cgal.h"
 
 #include <CGAL/convex_hull_2.h>
@@ -52,6 +54,8 @@
 #endif // ENABLE_CGAL
 
 #ifdef ENABLE_CARVE
+
+#define CSGIF_NAME "Carve"
 
 #include <carve/carve.hpp>
 #include <carve/csg.hpp>

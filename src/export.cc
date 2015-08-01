@@ -103,29 +103,56 @@ void exportFile(const class Geometry *root_geom, std::ostream &output, FileForma
 	}
 }
 
+void export_stl_files(const class Geometry *root_geom, const char *name2open)
+{
+//#ifdef ENABLE_CSGIF
+	if (const CSGIF_polyhedron *N = dynamic_cast<const CSGIF_polyhedron *>(root_geom)) {
+        export_stl_files (N, name2open);
+	}
+	else
+//#endif // ENABLE_CSGIF
+		if (const PolySet *ps = dynamic_cast<const PolySet *>(root_geom)) {
+            //TODO: export_stl(*ps, output);
+		}
+		else
+            assert(false && "Unsupported file format");
+}
+
 void exportFileByName(const class Geometry *root_geom, FileFormat format,
 	const char *name2open, const char *name2display)
 {
-	std::ofstream fstream(name2open);
-	if (!fstream.is_open()) {
-		PRINTB(_("Can't open file \"%s\" for export"), name2display);
-	} else {
-		bool onerror = false;
-		fstream.exceptions(std::ios::badbit|std::ios::failbit);
-		try {
-			exportFile(root_geom, fstream, format);
-		} catch (std::ios::failure x) {
-			onerror = true;
-		}
-		try { // make sure file closed - resources released
-			fstream.close();
-		} catch (std::ios::failure x) {
-			onerror = true;
-		}
-		if (onerror) {
-			PRINTB(_("ERROR: \"%s\" write error. (Disk full?)"), name2display);
-		}
-	}
+    if (format == OPENSCAD_STL)
+    {
+        bool onerror = false;
+        try {
+            export_stl_files (root_geom, name2open);
+        } catch (std::ios::failure x) {
+            onerror = true;
+        }
+    }
+    else
+    {
+        std::ofstream fstream(name2open);
+        if (!fstream.is_open()) {
+            PRINTB(_("Can't open file \"%s\" for export"), name2display);
+        } else {
+            bool onerror = false;
+            fstream.exceptions(std::ios::badbit|std::ios::failbit);
+            try {
+                exportFile(root_geom, fstream, format);
+            } catch (std::ios::failure x) {
+                onerror = true;
+            }
+            try { // make sure file closed - resources released
+                fstream.close();
+            } catch (std::ios::failure x) {
+                onerror = true;
+            }
+            if (onerror) {
+                PRINTB(_("ERROR: \"%s\" write error. (Disk full?)"), name2display);
+            }
+        }
+    }
 }
 
 void export_stl(const PolySet &ps, std::ostream &output)
